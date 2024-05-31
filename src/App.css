@@ -19,6 +19,14 @@
   height: 90px;
   width: 62px;
   background-size: contain;
+
+  &:hover {
+    cursor: grab;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .Hand {

@@ -30,22 +30,46 @@ function Droppable(props) {
   );
 }
 
+const cardsData = [
+  {
+    id: "1",
+    position: {
+      x: 0,
+      y: 0
+    }
+  },
+  {
+    id: "2",
+    position: {
+      x: 1,
+      y: 1
+    }
+  }
+];
+
 
 function App() {
   const [{x, y}, setCoordinates] = useState(defaultCoordinates);
+  const [cards, setCards] = useState(cardsData);
+
+  function handleDragEnd(ev) {
+    const card = cards.find((x) => x.id === ev.active.id);
+    card.position.x += ev.delta.x;
+    card.position.y += ev.delta.y;
+    const _cards = cards.map((x) => {
+      if (x.id === card.id) return card;
+      return x;
+    });
+    setCards(_cards);
+  }
   
   return (
-    <DndContext onDragEnd={({delta}) => {
-      setCoordinates(({x, y}) => {
-        return {
-          x: x + delta.x,
-          y: y + delta.y,
-        };
-      });
-    }}>
+    <DndContext onDragEnd={handleDragEnd}>
     <div className="App">
       <div className="Container" style={{ backgroundImage: "url(" + ")" }}>
-          <Card x={x} y={y}/>
+        {cards.map((card) => (
+          <Card x={card.position.x} y={card.position.y} id={card.id}/>
+        ))}
       </div>
       <Droppable>
         <Hand />
@@ -57,7 +81,7 @@ function App() {
 
 
 
-function Card({ x, y }) {
+function Card({ x, y, id }) {
   /**
    * A card has an image source for its front and back
    * A card can be translated, rotated, or flipped
@@ -66,7 +90,7 @@ function Card({ x, y }) {
    */
 
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
-    id: 'unique-id',
+    id: id,
   });
 
   const style = {
@@ -131,5 +155,7 @@ function Game() {
  * 
  * The field does not need an ID since there should only be one
  */
+
+
 
 export default App;
