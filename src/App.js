@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useReducer, useEffect } from 'react';
 import './App.css';
 import coney from './images/coney.jpg';
+import back from './images/card_backing.jpeg';
 import field from './images/duel-field-lux.png';
 import { v4 as uuidv4 } from 'uuid';
 
 
 import {
-  DndContext,
+  DndContext, useSensor, useSensors, PointerSensor, DragOverlay
 } from '@dnd-kit/core';
 
 import {useDraggable, useDroppable} from '@dnd-kit/core';
@@ -18,70 +19,186 @@ const defaultCoordinates = {
   y: 0,
 };
 
-function Droppable(props) {
+function Droppable({id, children}) {
+
   const {isOver, setNodeRef} = useDroppable({
-    id: 'unique-droppable',
+    id: id,
   });
-  console.log(isOver);
   return (
     <div ref={setNodeRef} className='Droppable'>
-      {props.children}
+      {children}
     </div>
   );
 }
 
-const cardsData = [
-  {
-    id: "1",
-    position: {
-      x: 0,
-      y: 0
-    }
-  },
-  {
-    id: "2",
-    position: {
-      x: 1,
-      y: 1
-    }
+class CardData {
+  constructor(id, x, y, location) {
+    this.id = id;
+    this.x = x;
+    this.y= y;
+    this.location = location;
   }
+}
+
+class CollectionData {
+  constructor(id, cards) {
+    this.id = id;
+    this.cards = cards;
+  }
+}
+
+// BEGIN: Initial states
+const cardsData = [
+  {id: '1', x: 0, y: 0, horizontal: false, flipped: false, location: 'field'},
+  {id: '2', x: 0, y: 0, horizontal: false, flipped: false, location: 'field'},
 ];
 
+const collectionsData = [
+  {id: 'hand', cards: []},
+  {id: 'field', cards: cardsData.map((card) => card.id)}
+];
+// END: Initial states
+
+// BEGIN: Enums
+export const ACTIONS = {
+  RESET: 'RESET',
+  MOVE_CARD: 'MOVE_CARD',
+  TRANSFER_CARD: 'TRANSFER_CARD',
+  SELECT_CARD: 'SELECT_CARD',
+  FLIP_SELECTED_CARD: 'FLIP_SELECTED_CARD',
+  ROTATE_SELECTED_CARD: 'ROTATE_SELECTED_CARD',
+
+}
+// END: Enums
+
+let currentMouse;
+document.addEventListener("mousemove", (e) => {
+  currentMouse = e;
+});
 
 function App() {
-  const [{x, y}, setCoordinates] = useState(defaultCoordinates);
-  const [cards, setCards] = useState(cardsData);
+  // 1. Find Card
+  // 2. Use location attr to find where it is stored
+  // 3. Can then call transfer using the "from", replacing location with the "to"
+
+  function reducer(state, { type, payload }) {
+    switch (type) {
+      // Move a card from one collection to another
+      case ACTIONS.TRANSFER_CARD:
+        const from = state.cards.find((card) => card.id === payload.targetId).location
+        if (from === payload.to) {
+          return {...state}
+        } else {
+          return {
+            ...state,
+            cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: currentMouse.clientX, y: currentMouse.clientY, location: payload.to} : card),
+            collections: state.collections.map(
+              (collection) => 
+              collection.id === from ? 
+              {...collection, cards: collection.cards.filter((cardId) => cardId !== payload.targetId)} : 
+              collection.id === payload.to ? 
+              {...collection, cards: [...collection.cards, payload.targetId]} : 
+              collection
+            )
+          };
+        }
+        
+      // Move a card's coordinates
+      case ACTIONS.MOVE_CARD:
+        return {
+          ...state,
+          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: (card.x + payload.deltaX), y: (card.y + payload.deltaY)} : card)
+        };
+      case ACTIONS.FLIP_SELECTED_CARD:
+        return {...state,
+          cards: state.cards.map((card) => card.id === state.selectedCardId ? {...card, flipped: !card.flipped} : card)}
+      case ACTIONS.ROTATE_SELECTED_CARD:
+        return {...state,
+          cards: state.cards.map((card) => card.id === state.selectedCardId ? {...card, horizontal: !card.horizontal} : card)}
+      case ACTIONS.SELECT_CARD:
+        return {...state, selectedCardId: payload.targetId}
+    }
+  }
+
+  const [{ cards, collections, selectedCardId }, dispatch] = useReducer(reducer,
+    {
+      cards: cardsData,
+      collections: collectionsData,
+      selectedCardId: '1'
+    });
 
   function handleDragEnd(ev) {
-    const card = cards.find((x) => x.id === ev.active.id);
-    card.position.x += ev.delta.x;
-    card.position.y += ev.delta.y;
-    const _cards = cards.map((x) => {
-      if (x.id === card.id) return card;
-      return x;
-    });
-    setCards(_cards);
+    const {active, over} = ev;
+    
+    if (over && over.id) {
+      dispatch({type: ACTIONS.TRANSFER_CARD, payload: {targetId: active.id, to: over.id}})
+    }
+    
+    dispatch({type: ACTIONS.MOVE_CARD, payload: {targetId: active.id, deltaX: ev.delta.x, deltaY: ev.delta.y}})
+  
+
   }
+
+  function handle() {
+    dispatch({ type: ACTIONS.TRANSFER_CARD , payload: { targetId: '1', from: 'field', to: 'hand' }})
+  }
+
+  function handleOnKeyDown(ev) {
+    switch(ev.code) {
+      case 'KeyR':
+        dispatch({type: ACTIONS.ROTATE_SELECTED_CARD, payload: {}});
+        break;
+      case 'KeyF':
+        dispatch({type: ACTIONS.FLIP_SELECTED_CARD, payload: {}});
+        break;
+    }
+  }
+
+  function handleUniversalClick(ev) {
+    if(ev.target.classList.contains('Container')) {
+      dispatch({type: ACTIONS.SELECT_CARD, payload: {selectedCardId: ''}})
+    }
+  }
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleOnKeyDown)
+    document.addEventListener('click', handleUniversalClick)
+  }, [])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  )
   
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="App">
-      <div className="Container" style={{ backgroundImage: "url(" + ")" }}>
-        {cards.map((card) => (
-          <Card x={card.position.x} y={card.position.y} id={card.id}/>
-        ))}
-      </div>
-      <Droppable>
-        <Hand />
+      <Droppable id='field'>
+        <div className="Container" style={{ backgroundImage: "url(" + ")" }}>
+          {cards.filter((card) => card.location === 'field').map((card) => (
+            <Card x={card.x} y={card.y} id={card.id} key={card.id} selected={card.id === selectedCardId} horizontal={card.horizontal} flipped={card.flipped} dispatch={dispatch}/>
+          ))}
+        </div>
       </Droppable>
+
+      {collections.map((collection) => (
+          <div>{collection.id }</div>
+      ))}
+      <div onClick={handle}>CLICK ME</div>
+      <Droppable id='hand'>
+        <Hand cards={cards.filter((card) => card.location === 'hand')} dispatch={dispatch}/>
+      </Droppable>
+      <Deck x={400} y={-400} />
     </div>
     </DndContext>
   );
 }
 
 
-
-function Card({ x, y, id }) {
+function Card({ horizontal , flipped, x, y, id, selected, dispatch, moveable = true}) {
   /**
    * A card has an image source for its front and back
    * A card can be translated, rotated, or flipped
@@ -92,20 +209,34 @@ function Card({ x, y, id }) {
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: id,
   });
-
+  const transformString = (transform !== null ? CSS.Translate.toString(transform) : '') + (horizontal ? ' rotate(90deg)' : '');
   const style = {
-    transform: CSS.Translate.toString(transform),
-    backgroundImage: "url(" + coney + ")",
-    top: y,
-    left: x,
+    top: moveable ? y : '',
+    left: moveable ? x : '',
+    transform: transformString,
     position: 'relative',
+    border: selected ? 'solid blue' : ''
   };
+
+  function handleOnClick() {
+    dispatch({type: ACTIONS.SELECT_CARD, payload: {targetId: id}})
+  }  
+
   return (
-      <div className="Card" ref={setNodeRef} style={style} {...listeners} {...attributes}></div>
+      <div onClick={handleOnClick} className={"Card" + (flipped ? ' flipped' : '')} ref={setNodeRef} style={style} {...listeners} {...attributes}>
+        <div className='CardInner'>
+          <div className='CardFront'>
+            <img src={coney}/>
+          </div>
+          <div className='CardBack'>
+            <img src={back}/>
+          </div>
+        </div>
+      </div>
   );
 }
 
-function Hand() {
+function Hand({ cards, dispatch }) {
   /**
    * A hand is an ordered list of cards
    * Cards can be reordered in hand by dragging them
@@ -113,17 +244,50 @@ function Hand() {
   
   return(
     <div className="flex flexCenter Hand" style={{ flexWrap: "wrap" }}>
+      {cards.map((card) => <Card {...card} dispatch={dispatch} key={card.id} moveable={false}/>
+)}
     </div>
   )
 }
 
 
-function Deck() {
+function Deck({ id = 'deck', x, y, cards, flipped = true }) {
   /** 
    * A deck is a list of cards 
    * Cards can be placed on the top or bottom of a deck
    * A deck can be shuffled
   */
+
+  const {attributes, listeners, setNodeRef, transform} = useDraggable({
+    id: id,
+  });
+  return(
+   
+    <Droppable>
+      <div className="Card" style={{top: y, left: x, position: 'relative'}} ref={setNodeRef} {...listeners} {...attributes}>
+        <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
+          <img src={back}/>
+        </div>
+        <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+          <img src={back}/>
+        </div>
+        <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
+          <img src={back}/>
+        </div>
+
+      </div>
+
+      <DragOverlay>
+      <div className="Card">
+      <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+          <img src={back}/>
+        </div>
+        </div>
+      </DragOverlay>
+
+    </Droppable>
+    
+  )
 }
 
 function Field() {
