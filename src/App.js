@@ -1,17 +1,25 @@
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useState } from 'react';
 import './App.css';
 import coney from './images/coney.jpg';
 import back from './images/card_backing.jpeg';
 import field from './images/duel-field-lux.png';
 import { v4 as uuidv4 } from 'uuid';
-
-
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  GlassMagnifier,
+} from "react-image-magnifiers";
 import {
   DndContext, useSensor, useSensors, PointerSensor, DragOverlay
 } from '@dnd-kit/core';
 
+import allCards from './yugioh.json';
+
 import {useDraggable, useDroppable} from '@dnd-kit/core';
 import {CSS} from '@dnd-kit/utilities';
+
+// Loading all images slows things down a LOT
+// const images = require.context('./data/cardImages', true);
 
 
 const defaultCoordinates = {
@@ -49,13 +57,14 @@ class CollectionData {
 
 // BEGIN: Initial states
 const cardsData = [
-  {id: '1', x: 0, y: 0, horizontal: false, flipped: false, location: 'field'},
-  {id: '2', x: 0, y: 0, horizontal: false, flipped: false, location: 'field'},
+  {id: '1', x: 0, y: 0, horizontal: false, flipped: false, location: 'field', cid: 76145933},
+  {id: '2', x: 0, y: 0, horizontal: false, flipped: false, location: 'field', cid: 75922381},
 ];
 
 const collectionsData = [
   {id: 'hand', cards: []},
-  {id: 'field', cards: cardsData.map((card) => card.id)}
+  {id: 'field', cards: cardsData.map((card) => card.id)},
+  {id: 'deck', cards: []}
 ];
 // END: Initial states
 
@@ -77,10 +86,28 @@ document.addEventListener("mousemove", (e) => {
 });
 
 function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Game />}>
+          <Route index element={<Game />} />
+          <Route path="*" element={<NoPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+const NoPage = () => {
+  return <h1>404</h1>;
+};
+
+
+function Game() {
   // 1. Find Card
   // 2. Use location attr to find where it is stored
   // 3. Can then call transfer using the "from", replacing location with the "to"
-
+  const [overlayEnabled, setOverlayEnabled] = useState(false)
   function reducer(state, { type, payload }) {
     switch (type) {
       // Move a card from one collection to another
@@ -105,6 +132,7 @@ function App() {
         
       // Move a card's coordinates
       case ACTIONS.MOVE_CARD:
+        debugger;
         return {
           ...state,
           cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: (card.x + payload.deltaX), y: (card.y + payload.deltaY)} : card)
@@ -125,18 +153,28 @@ function App() {
       cards: cardsData,
       collections: collectionsData,
       selectedCardId: '1'
+
     });
 
   function handleDragEnd(ev) {
     const {active, over} = ev;
-    
-    if (over && over.id) {
-      dispatch({type: ACTIONS.TRANSFER_CARD, payload: {targetId: active.id, to: over.id}})
-    }
-    
-    dispatch({type: ACTIONS.MOVE_CARD, payload: {targetId: active.id, deltaX: ev.delta.x, deltaY: ev.delta.y}})
-  
+    const activeCollection = collections.find((collection) => collection.id === active.id);
 
+    if(!activeCollection) {
+      if (over && over.id) {
+        dispatch({type: ACTIONS.TRANSFER_CARD, payload: {targetId: active.id, to: over.id}})
+      }
+      debugger;
+      dispatch({type: ACTIONS.MOVE_CARD, payload: {targetId: active.id, deltaX: ev.delta.x, deltaY: ev.delta.y, x: currentMouse.clientX, y: currentMouse.clientY}})
+    }
+    setOverlayEnabled(false);
+    debugger;
+  }
+
+  function handleDragStart(ev) {
+    const {active} = ev;
+    const activeCollection = collections.find((collection) => collection.id === active.id);
+    setOverlayEnabled(activeCollection !== undefined)
   }
 
   function handle() {
@@ -174,31 +212,44 @@ function App() {
   )
   
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
     <div className="App">
       <Droppable id='field'>
         <div className="Container" style={{ backgroundImage: "url(" + ")" }}>
           {cards.filter((card) => card.location === 'field').map((card) => (
-            <Card x={card.x} y={card.y} id={card.id} key={card.id} selected={card.id === selectedCardId} horizontal={card.horizontal} flipped={card.flipped} dispatch={dispatch}/>
+            <Card {...card} key={card.id} selected={card.id === selectedCardId}  dispatch={dispatch}/>
           ))}
         </div>
       </Droppable>
 
-      {collections.map((collection) => (
-          <div>{collection.id }</div>
-      ))}
-      <div onClick={handle}>CLICK ME</div>
       <Droppable id='hand'>
         <Hand cards={cards.filter((card) => card.location === 'hand')} dispatch={dispatch}/>
       </Droppable>
-      <Deck x={400} y={-400} />
+      <Deck x={400} y={400} id='deck'/>
+      <CardDetails card={ cards.find((card) => card.id === selectedCardId)} />
     </div>
+    <DragOverlay>{overlayEnabled ? <div className="Card">
+        <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+            <img src={back}/>
+          </div>
+          </div>:<></>}
+        
+      </DragOverlay>
     </DndContext>
   );
 }
 
+function CardDetails({ card }) {
+    // Displays a larger 
+    return (
+    <div className='CardDetails'>{ card ? <img style={{objectFit: 'contain', width: '400px'}} src={allCards.data.find((c) => c.id === card.cid).card_images[0].image_url}/> : <div></div>}
+    </div>)
 
-function Card({ horizontal , flipped, x, y, id, selected, dispatch, moveable = true}) {
+
+}
+
+
+function Card({ horizontal , flipped, x, y, id, selected, dispatch, cid, moveable = true}) {
   /**
    * A card has an image source for its front and back
    * A card can be translated, rotated, or flipped
@@ -220,13 +271,13 @@ function Card({ horizontal , flipped, x, y, id, selected, dispatch, moveable = t
 
   function handleOnClick() {
     dispatch({type: ACTIONS.SELECT_CARD, payload: {targetId: id}})
-  }  
+  } 
 
   return (
       <div onClick={handleOnClick} className={"Card" + (flipped ? ' flipped' : '')} ref={setNodeRef} style={style} {...listeners} {...attributes}>
         <div className='CardInner'>
           <div className='CardFront'>
-            <img src={coney}/>
+            <img src={allCards.data.find((c) => c.id === cid).card_images[0].image_url_small}/>
           </div>
           <div className='CardBack'>
             <img src={back}/>
@@ -262,30 +313,33 @@ function Deck({ id = 'deck', x, y, cards, flipped = true }) {
     id: id,
   });
   return(
-   
-    <Droppable>
-      <div className="Card" style={{top: y, left: x, position: 'relative'}} ref={setNodeRef} {...listeners} {...attributes}>
-        <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
-          <img src={back}/>
-        </div>
-        <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
-          <img src={back}/>
-        </div>
-        <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
-          <img src={back}/>
-        </div>
+   <>
 
-      </div>
-
-      <DragOverlay>
-      <div className="Card">
-      <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
-          <img src={back}/>
+      <div className="Card" style={{top: y, left: x, position: 'absolute'}} >
+          <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
+            <img src={back}/>
+          </div>
+          <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+            <img src={back}/>
+          </div>
+          <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
+            <img src={back}/>
+          </div>
         </div>
+        <Droppable>
+        <div className="Card" style={{top: y, left: x, position: 'absolute'}} ref={setNodeRef} {...listeners} {...attributes}>
+          <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
+            <img src={back}/>
+          </div>
+          <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+            <img src={back}/>
+          </div>
+          <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
+            <img src={back}/>
+          </div>
         </div>
-      </DragOverlay>
-
-    </Droppable>
+      </Droppable>
+    </>
     
   )
 }
@@ -295,12 +349,6 @@ function Field() {
    * The field is the main space where cards are placed and moved
    * A field tracks the cards it contains
    * (?): A field tracks the positions of the cards inside it
-   */
-}
-
-function Game() {
-  /**
-   * A game has 
    */
 }
 
