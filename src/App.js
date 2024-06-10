@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useState } from 'react';
+import { useReducer, useEffect, useState, useRef } from 'react';
 import './App.css';
 import coney from './images/coney.jpg';
 import back from './images/card_backing.jpeg';
@@ -6,9 +6,9 @@ import field from './images/duel-field-lux.png';
 import { v4 as uuidv4 } from 'uuid';
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import {
-  GlassMagnifier,
-} from "react-image-magnifiers";
+import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
+import Fuse from 'fuse.js';
+
 import {
   DndContext, useSensor, useSensors, PointerSensor, DragOverlay
 } from '@dnd-kit/core';
@@ -39,38 +39,27 @@ function Droppable({id, children}) {
   );
 }
 
-class CardData {
-  constructor(id, x, y, location) {
-    this.id = id;
-    this.x = x;
-    this.y= y;
-    this.location = location;
-  }
-}
-
-class CollectionData {
-  constructor(id, cards) {
-    this.id = id;
-    this.cards = cards;
-  }
-}
-
 // BEGIN: Initial states
 const cardsData = [
-  {id: '1', x: 0, y: 0, horizontal: false, flipped: false, location: 'field', cid: 76145933},
-  {id: '2', x: 0, y: 0, horizontal: false, flipped: false, location: 'field', cid: 75922381},
+  {id: '1', x: 0, y: 0, z: 0, horizontal: false, flipped: false, location: 'field', cid: 76145933},
+  {id: '2', x: 100, y: 20, z: 0, horizontal: false, flipped: false, location: 'field', cid: 75922381},
+  {id: '3', x: 0, y: 0, z: 0, horizontal: false, flipped: false, location: 'hand', cid: 15443125},
+  {id: '4', x: 0, y: 0, z: 0, horizontal: false, flipped: false, location: 'hand', cid: 14558127},
+  {id: '5', x: 0, y: 0, z: 0, horizontal: false, flipped: false, location: 'deck', cid: 14558127},
+  {id: '6', x: 0, y: 0, z: 0, horizontal: false, flipped: false, location: 'deck', cid: 14558127},
 ];
 
 const collectionsData = [
-  {id: 'hand', cards: []},
-  {id: 'field', cards: cardsData.map((card) => card.id)},
-  {id: 'deck', cards: []}
+  {id: 'hand', cards: cardsData.filter((card) => card.location === 'hand').map((card) => card.id)},
+  {id: 'field', cards: cardsData.filter((card) => card.location === 'field').map((card) => card.id)},
+  {id: 'deck', cards: cardsData.filter((card) => card.location === 'deck').map((card) => card.id)}
 ];
 // END: Initial states
 
 // BEGIN: Enums
-export const ACTIONS = {
+export const GAME_ACTIONS = {
   RESET: 'RESET',
+  GRAB_CARD: 'GRAB_CARD',
   MOVE_CARD: 'MOVE_CARD',
   TRANSFER_CARD: 'TRANSFER_CARD',
   SELECT_CARD: 'SELECT_CARD',
@@ -78,10 +67,20 @@ export const ACTIONS = {
   ROTATE_SELECTED_CARD: 'ROTATE_SELECTED_CARD',
 
 }
+export const DECK_EDITOR_ACTIONS = {
+  ADD: 'ADD',
+  REMOVE: 'REMOVE',
+  IMPORT: 'IMPORT',
+  REORDER: 'REORDER'
+}
 // END: Enums
 
 let currentMouse;
 document.addEventListener("mousemove", (e) => {
+  // console.log('client: ', e.clientX, e.clientY);
+  // console.log('page: ', e.pageX, e.pageY);
+  // console.log('screen: ', e.screenX, e.screenY);
+
   currentMouse = e;
 });
 
@@ -89,7 +88,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Game />}>
+        <Route path="/" element={<DeckEditor />}>
+          <Route path="search" element={<CardSearch />} />
           <Route index element={<Game />} />
           <Route path="*" element={<NoPage />} />
         </Route>
@@ -102,16 +102,96 @@ const NoPage = () => {
   return <h1>404</h1>;
 };
 
+let globalZIndex = 0;
 
+
+function DeckEditor() {
+
+  function reducer(state, {type, payload}) {
+      switch(type) {
+        case DECK_EDITOR_ACTIONS.ADD:
+          return {...state, cards: [...state.cards, allCards.data.find((card) => card.id === payload.cardId)]};
+      }
+  }
+
+  const [{ cards }, dispatch] = useReducer(reducer,
+    {
+      cards: []
+    });
+
+  return(
+    <>
+      <DeckViewer cards={cards}/>
+      <CardSearch dispatch={dispatch}/>
+    </>
+
+  )
+}
+
+function DeckViewer({ cards }) {
+  return (
+  <div className="flex flexCenter flexWrap bgBlue overflowScroll" style={{ width: "600px", height: "100vh", margin: "auto"}}>
+    {
+      cards.map((card) => <div ><img style={{width: "50px", height: "72px"}} src={card.card_images[0].image_url_small} /></div>)
+    }
+  </div>)
+}
+
+function CardSearch({ dispatch }) {
+  const [queryText, setQueryText] = useState('');
+  const [results, setResults] = useState([]);
+  const fuse = new Fuse(allCards.data, {keys: ['name'], threshold: 0.1});
+
+  function handleSearch(ev) {
+    setQueryText(ev.target.value);
+    if (ev.target.value.length >= 4) {
+      const fuseResults = fuse.search(ev.target.value);
+      setResults(fuseResults.map((result) => result.item));
+    }
+  }
+
+  return (
+    <div className="bgBlue search">
+      <div>
+        <input
+          value={queryText}
+          type="search"
+          onChange={handleSearch}
+          placeholder={`Start typing to search…`}
+          autoFocus
+        />
+      </div>
+      {results.map((item) => (
+        <CardSearchResult item={item} dispatch={dispatch}/>
+      ))}
+    </div>
+  );
+}
+
+function CardSearchResult({item, dispatch}) {
+
+  function handleOnClick() {
+    dispatch({type: DECK_EDITOR_ACTIONS.ADD, payload: {cardId: item.id}})
+  }
+  
+  return (
+  <div onClick={handleOnClick} className="flex flexStart alignStart" key={item.id}>
+    <img style={{objectFit: 'contain', width: '60px', paddingTop: '10px'}} src={item.card_images[0].image_url_small}/> 
+    <div style={{padding: '10px'}}>
+    <p>{item.name}</p>
+    <p>{item.race} {item.type}</p>
+    </div>
+  </div>
+  )
+}
+ 
 function Game() {
-  // 1. Find Card
-  // 2. Use location attr to find where it is stored
-  // 3. Can then call transfer using the "from", replacing location with the "to"
   const [overlayEnabled, setOverlayEnabled] = useState(false)
+  const fieldRef = useRef();
   function reducer(state, { type, payload }) {
     switch (type) {
       // Move a card from one collection to another
-      case ACTIONS.TRANSFER_CARD:
+      case GAME_ACTIONS.TRANSFER_CARD:
         const from = state.cards.find((card) => card.id === payload.targetId).location
         if (from === payload.to) {
           return {...state}
@@ -129,21 +209,28 @@ function Game() {
             )
           };
         }
-        
-      // Move a card's coordinates
-      case ACTIONS.MOVE_CARD:
-        debugger;
+      case GAME_ACTIONS.GRAB_CARD:
+        const z = globalZIndex + 1;
+        globalZIndex = z;
         return {
           ...state,
-          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: (card.x + payload.deltaX), y: (card.y + payload.deltaY)} : card)
+          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, z: z} : card)
+        }
+        
+      // Move a card's coordinates
+      case GAME_ACTIONS.MOVE_CARD:
+        let field = fieldRef.current.getBoundingClientRect()
+        return {
+          ...state,
+          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: payload.x, y: payload.y} : card)
         };
-      case ACTIONS.FLIP_SELECTED_CARD:
+      case GAME_ACTIONS.FLIP_SELECTED_CARD:
         return {...state,
           cards: state.cards.map((card) => card.id === state.selectedCardId ? {...card, flipped: !card.flipped} : card)}
-      case ACTIONS.ROTATE_SELECTED_CARD:
+      case GAME_ACTIONS.ROTATE_SELECTED_CARD:
         return {...state,
           cards: state.cards.map((card) => card.id === state.selectedCardId ? {...card, horizontal: !card.horizontal} : card)}
-      case ACTIONS.SELECT_CARD:
+      case GAME_ACTIONS.SELECT_CARD:
         return {...state, selectedCardId: payload.targetId}
     }
   }
@@ -152,23 +239,29 @@ function Game() {
     {
       cards: cardsData,
       collections: collectionsData,
-      selectedCardId: '1'
+      selectedCardId: ''
 
     });
 
   function handleDragEnd(ev) {
-    const {active, over} = ev;
+    const {activatorEvent, active, over} = ev;
+    let activeRect = active.rect.current.translated;
+    let field = fieldRef.current.getBoundingClientRect()
+    
+    console.log(active.rect.current.translated);
+    console.log(field);
     const activeCollection = collections.find((collection) => collection.id === active.id);
-
     if(!activeCollection) {
       if (over && over.id) {
-        dispatch({type: ACTIONS.TRANSFER_CARD, payload: {targetId: active.id, to: over.id}})
+        dispatch({type: GAME_ACTIONS.TRANSFER_CARD, payload: {targetId: active.id, to: over.id, }})
       }
-      debugger;
-      dispatch({type: ACTIONS.MOVE_CARD, payload: {targetId: active.id, deltaX: ev.delta.x, deltaY: ev.delta.y, x: currentMouse.clientX, y: currentMouse.clientY}})
+      dispatch({type: GAME_ACTIONS.MOVE_CARD, payload: {targetId: active.id, x: activeRect.left - field.x, y: activeRect.top - field.y}})
     }
     setOverlayEnabled(false);
-    debugger;
+  }
+
+  function handleDragMove(ev) {
+    
   }
 
   function handleDragStart(ev) {
@@ -178,23 +271,23 @@ function Game() {
   }
 
   function handle() {
-    dispatch({ type: ACTIONS.TRANSFER_CARD , payload: { targetId: '1', from: 'field', to: 'hand' }})
+    dispatch({ type: GAME_ACTIONS.TRANSFER_CARD , payload: { targetId: '1', from: 'field', to: 'hand' }})
   }
 
   function handleOnKeyDown(ev) {
     switch(ev.code) {
       case 'KeyR':
-        dispatch({type: ACTIONS.ROTATE_SELECTED_CARD, payload: {}});
+        dispatch({type: GAME_ACTIONS.ROTATE_SELECTED_CARD, payload: {}});
         break;
       case 'KeyF':
-        dispatch({type: ACTIONS.FLIP_SELECTED_CARD, payload: {}});
+        dispatch({type: GAME_ACTIONS.FLIP_SELECTED_CARD, payload: {}});
         break;
     }
   }
 
   function handleUniversalClick(ev) {
     if(ev.target.classList.contains('Container')) {
-      dispatch({type: ACTIONS.SELECT_CARD, payload: {selectedCardId: ''}})
+      dispatch({type: GAME_ACTIONS.SELECT_CARD, payload: {selectedCardId: ''}})
     }
   }
 
@@ -212,10 +305,10 @@ function Game() {
   )
   
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+    <DndContext sensors={sensors} onDragMove={handleDragMove} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
     <div className="App">
       <Droppable id='field'>
-        <div className="Container" style={{ backgroundImage: "url(" + ")" }}>
+        <div className="Container" style={{ backgroundImage: "url(" + ")" }} ref={fieldRef}>
           {cards.filter((card) => card.location === 'field').map((card) => (
             <Card {...card} key={card.id} selected={card.id === selectedCardId}  dispatch={dispatch}/>
           ))}
@@ -228,13 +321,13 @@ function Game() {
       <Deck x={400} y={400} id='deck'/>
       <CardDetails card={ cards.find((card) => card.id === selectedCardId)} />
     </div>
-    <DragOverlay>{overlayEnabled ? <div className="Card">
+    {/* <DragOverlay>{overlayEnabled ? <div className="Card">
         <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
             <img src={back}/>
           </div>
           </div>:<></>}
         
-      </DragOverlay>
+      </DragOverlay> */}
     </DndContext>
   );
 }
@@ -249,7 +342,7 @@ function CardDetails({ card }) {
 }
 
 
-function Card({ horizontal , flipped, x, y, id, selected, dispatch, cid, moveable = true}) {
+function Card({ horizontal , flipped, x, y, z, id, selected, dispatch, cid, moveable = true}) {
   /**
    * A card has an image source for its front and back
    * A card can be translated, rotated, or flipped
@@ -265,16 +358,21 @@ function Card({ horizontal , flipped, x, y, id, selected, dispatch, cid, moveabl
     top: moveable ? y : '',
     left: moveable ? x : '',
     transform: transformString,
-    position: 'relative',
-    border: selected ? 'solid blue' : ''
+    position: moveable ? 'absolute' : 'relative',
+    border: selected ? 'solid blue' : '',
+    zIndex: z
   };
 
   function handleOnClick() {
-    dispatch({type: ACTIONS.SELECT_CARD, payload: {targetId: id}})
-  } 
+    dispatch({type: GAME_ACTIONS.SELECT_CARD, payload: {targetId: id}})
+  }
+  
+  function incrementZIndex() {
+    dispatch({type: GAME_ACTIONS.GRAB_CARD, payload: {targetId: id}})
+  }
 
   return (
-      <div onClick={handleOnClick} className={"Card" + (flipped ? ' flipped' : '')} ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <div onMouseDown={incrementZIndex} onClick={handleOnClick} className={"Card" + (flipped ? ' flipped' : '')} ref={setNodeRef} style={style} {...listeners} {...attributes}>
         <div className='CardInner'>
           <div className='CardFront'>
             <img src={allCards.data.find((c) => c.id === cid).card_images[0].image_url_small}/>
@@ -312,22 +410,23 @@ function Deck({ id = 'deck', x, y, cards, flipped = true }) {
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: id,
   });
+  const transformString = (transform !== null ? CSS.Translate.toString(transform) : '');
+  const style = {
+    transform: transformString,
+  };
   return(
-   <>
+   <> 
 
-      <div className="Card" style={{top: y, left: x, position: 'absolute'}} >
-          <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
-            <img src={back}/>
-          </div>
-          <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
-            <img src={back}/>
-          </div>
+        <div className="Card" style={{...style, top: y, left: x, position: 'absolute', zIndex: 1, border: 'none'}} ref={setNodeRef} {...listeners} {...attributes}>
           <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
             <img src={back}/>
           </div>
         </div>
         <Droppable>
-        <div className="Card" style={{top: y, left: x, position: 'absolute'}} ref={setNodeRef} {...listeners} {...attributes}>
+        <div className="Card" style={{top: y, left: x, position: 'absolute'}}>
+          <div style={{position: 'absolute'}}>
+            <img src={back}/>
+          </div>
           <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
             <img src={back}/>
           </div>

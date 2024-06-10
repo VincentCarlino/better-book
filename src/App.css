@@ -82,4 +82,48 @@
     justify-content: center;
     gap: 10px;
   }
+
+  &.flexStart {
+    justify-content: flex-start;
+  }
+
+  &.flexWrap {
+    flex-wrap: wrap;
+  }
+
+  &.alignStart {
+    align-items: flex-start;
+  }
 }
+
+.bgBlue {
+  background-color: #8f8fb9;
+}
+
+.search {
+  height: 400px;
+  width: 200px;
+  padding: 10px;
+  overflow: scroll;
+  border-radius: 10px;
+  opacity: 0.8;
+  position: fixed;
+  top: 20px;
+  z-index: 99;
+  right: 20px;
+}
+
+p {
+  margin: 2px;
+}
+
+input[type="search"] {
+  font-size: 20px;
+  padding: 5px;
+  width: 100%;
+}
+
+.overflowScroll {
+  overflow: scroll;
+}
+
