@@ -1,33 +1,20 @@
 import { useReducer, useEffect, useState, useRef } from 'react';
 import './App.css';
-import coney from './images/coney.jpg';
 import back from './images/card_backing.jpeg';
-import field from './images/duel-field-lux.png';
-import { v4 as uuidv4 } from 'uuid';
-import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
+// import field from './images/duel-field-lux.png';
+import { BrowserRouter, Switch, Routes, Route } from "react-router-dom";
 import Fuse from 'fuse.js';
-import DraggableGrid from 'ruuri';
 import { DeckEditor } from './components/DeckEditor/DeckEditor';
 
 import {
-  DndContext, useSensor, useSensors, PointerSensor, DragOverlay
+  DndContext, useSensor, useSensors, PointerSensor,
 } from '@dnd-kit/core';
 
 import allCards from './yugioh.json';
-
+import { yugioh } from './data/Yugioh';
 import {useDraggable, useDroppable} from '@dnd-kit/core';
 import {CSS} from '@dnd-kit/utilities';
 
-// Loading all images slows things down a LOT
-// const images = require.context('./data/cardImages', true);
-
-
-const defaultCoordinates = {
-  x: 0,
-  y: 0,
-};
 
 function Droppable({id, children}) {
 
@@ -88,59 +75,37 @@ document.addEventListener("mousemove", (e) => {
 
 function App() {
   return (
+    <div className="App">
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<DeckEditor />}>
-          <Route path="search" element={<CardSearch />} />
-          <Route index element={<Game />} />
+        <Route path="/deck" element={<DeckEditor />} />
+          <Route path="/search" element={<CardSearch />} />
+          <Route path="/game" element={<Game />} />
           <Route path="*" element={<NoPage />} />
-        </Route>
       </Routes>
     </BrowserRouter>
+    </div>
   );
 }
 
 const NoPage = () => {
-  return <h1>404</h1>;
+  return (
+     <div className="center">
+        <div className={"Card CardLarge Animate"} >
+        <div className='CardInner'>
+          <div className='CardFront'>
+            <img src={yugioh.getRandomImage()}/>
+          </div>
+          <div className='CardBack'>
+            <img src={back}/>
+          </div>
+        </div>
+      </div>
+      <h1 className="textCenter">404</h1>
+     </div>);
 };
 
 let globalZIndex = 0;
-
-
-// function DeckEditor() {
-
-//   function reducer(state, {type, payload}) {
-//       switch(type) {
-//         case DECK_EDITOR_ACTIONS.ADD:
-//           return {...state, cards: [...state.cards, allCards.data.find((card) => card.id === payload.cardId)]};
-//       }
-//   }
-
-//   const [{ cards }, dispatch] = useReducer(reducer,
-//     {
-//       cards: []
-//     });
-
-//   return(
-//     <>
-//       <DeckViewer cards={cards}/>
-//       <CardSearch dispatch={dispatch}/>
-//     </>
-
-//   )
-// // }
-
-// function DeckViewer({ cards }) {
-  
- 
-  
-  
-//   return (
-    
-//   <div className="flex flexCenter flexWrap alignContentStart bgBlue overflowScroll" style={{ width: "600px", height: "100vh", margin: "auto"}}>
-//   </div>
-//   )
-// }
 
 function CardSearch({ dispatch }) {
   const [queryText, setQueryText] = useState('');

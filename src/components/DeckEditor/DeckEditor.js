@@ -12,11 +12,11 @@ import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import Fuse from 'fuse.js';
 
 import '../../App.css';
+import { yugioh } from '../../data/Yugioh';
 
 import { CSS } from '@dnd-kit/utilities';
 import allCards from '../../yugioh.json';
@@ -148,7 +148,7 @@ function SortableCard({ id, card, dispatch }) {
 
     return (
         <div onClick={handleOnClick} onContextMenu={(event) => handleOnRightClick(event, card.sortableId)} ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <img style={{ width: "75px", height: "108px" }} src={card.card_images[0].image_url_small} />
+            <img style={{ width: "75px", height: "108px" }} src={yugioh.getImageSmall(card.id)} />
         </div>
     );
 }
@@ -197,7 +197,7 @@ function CardSearchResult({ item, dispatch }) {
 
     return (
         <div onClick={handleOnClick} onContextMenu={handleOnRightClick} className="flex flexStart alignItemsStart" key={item.id}>
-            <img style={{ objectFit: 'contain', width: '60px', paddingTop: '10px' }} src={item.card_images[0].image_url_small} />
+            <img style={{ objectFit: 'contain', width: '60px', paddingTop: '10px' }} src={yugioh.getImageSmall(item)} />
             <div style={{ padding: '10px' }}>
                 <p>{item.name}</p>
                 <p>{item.race} {item.type}</p>
@@ -213,7 +213,7 @@ function CardDetails({ cardId, magnify }) {
     }
 
     return (
-    <div className='CardDetails'>{ cardId ? <img style={{objectFit: 'contain', width: '400px'}} src={allCards.data.find((card) => card.id === cardId).card_images[0].image_url}/> : <div></div>}
+    <div className='CardDetails'>{ cardId ? <img style={{objectFit: 'contain', width: '400px'}} src={yugioh.getImage(cardId)}/> : <div></div>}
     </div>)
 
 
