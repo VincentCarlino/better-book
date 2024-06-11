@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from 'react';
+import React, { useReducer, useEffect, useState } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -29,7 +29,7 @@ export const DECK_EDITOR_ACTIONS = {
     IMPORT: 'IMPORT',
     SELECT: 'SELECT',
     SAVE_AS: 'SAVE_AS',
-    TOGGLE_MAGNIFY: 'TOGGLE_MAGNIFY'
+    TOGGLE_MAGNIFY: 'TOGGLE_MAGNIFY',
 }
 
 export function DeckEditor() {
@@ -54,33 +54,31 @@ export function DeckEditor() {
           cards: [],
           selectedId: '',
           idCounter: 0,
-          magnify: false,
         });
 
     useEffect(() => {
         document.addEventListener('keydown', handleOnKeyDown)
-        document.addEventListener('click', handleUniversalClick)
     }, [])
 
-    function handleOnKeyDown(e) {
+    function handleOnKeyDown(ev) {
         switch(ev.code) {
             case 'KeyM':
               dispatch({type: DECK_EDITOR_ACTIONS.TOGGLE_MAGNIFY, payload: {}});
               break;
+        }
     }
     
-
     return (
         <div>
             <DeckViewer cards={cards} dispatch={dispatch}/>
             <CardSearch dispatch={dispatch}/> 
-            <CardDetails cardId={selectedId} magnify={magnify}/>
+            <CardDetails cardId={selectedId}/>
         </div>
     );
 }
 
 
-export function DeckViewer({ cards, dispatch }) {
+function DeckViewer({ cards, dispatch }) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
