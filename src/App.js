@@ -401,7 +401,7 @@ function Deck({ id = 'deck', x, y, cards, flipped = true }) {
   return(
    <> 
 
-        <div className="Card" style={{...style, top: y, left: x, position: 'absolute', zIndex: 1, border: 'none'}} ref={setNodeRef} {...listeners} {...attributes}>
+        <div className="Card" style={{...style, top: y, left: x, position: 'absolute', zIndex: 1, border: 'none', boxShadow: 'none'}} ref={setNodeRef} {...listeners} {...attributes}>
           <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
             <img src={back}/>
           </div>
