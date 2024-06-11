@@ -193,7 +193,7 @@ function Game() {
         let field = fieldRef.current.getBoundingClientRect()
         return {
           ...state,
-          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: payload.x, y: payload.y} : card)
+          cards: state.cards.map((card) => card.id === payload.targetId ? {...card, x: payload.x + (card.horizontal ? 45 : 0), y: payload.y + (card.horizontal ? 31 : 0)} : card)
         };
       case GAME_ACTIONS.FLIP_SELECTED_CARD:
         return {...state,
@@ -219,8 +219,6 @@ function Game() {
     let activeRect = active.rect.current.translated;
     let field = fieldRef.current.getBoundingClientRect()
     
-    console.log(active.rect.current.translated);
-    console.log(field);
     const activeCollection = collections.find((collection) => collection.id === active.id);
     if(!activeCollection) {
       if (over && over.id) {
@@ -321,10 +319,23 @@ function Card({ horizontal , flipped, x, y, z, id, selected, dispatch, cid, move
    * A card has an ID that is used to lookup the image source
    */
 
+  const [mouseX, setMouseX] = useState(0);
+  const [mouseY, setMouseY] = useState(0);
+
+  const onMouseEnter = (e) => {
+      setMouseY(13);
+      setMouseX(-2);
+  };
+
+  const onMouseLeave = (e) => {
+      setMouseX(0);
+      setMouseY(0);
+  };
+
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: id,
   });
-  const transformString = (transform !== null ? CSS.Translate.toString(transform) : '') + (horizontal ? ' rotate(90deg)' : '');
+  const transformString = (transform !== null ? CSS.Translate.toString(transform) : '') + (horizontal ? ' rotate(90deg)' : '') + " rotateX(" + mouseX + "deg) rotateY(" + mouseY + "deg)";
   const style = {
     top: moveable ? y : '',
     left: moveable ? x : '',
@@ -343,6 +354,7 @@ function Card({ horizontal , flipped, x, y, z, id, selected, dispatch, cid, move
   }
 
   return (
+    <div onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       <div onMouseDown={incrementZIndex} onClick={handleOnClick} className={"Card" + (flipped ? ' flipped' : '')} ref={setNodeRef} style={style} {...listeners} {...attributes}>
         <div className='CardInner'>
           <div className='CardFront'>
@@ -353,6 +365,7 @@ function Card({ horizontal , flipped, x, y, z, id, selected, dispatch, cid, move
           </div>
         </div>
       </div>
+    </div>
   );
 }
 
