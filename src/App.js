@@ -8,6 +8,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
 import Fuse from 'fuse.js';
+import DraggableGrid from 'ruuri';
+import { DeckEditor } from './components/DeckEditor/DeckEditor';
 
 import {
   DndContext, useSensor, useSensors, PointerSensor, DragOverlay
@@ -105,37 +107,40 @@ const NoPage = () => {
 let globalZIndex = 0;
 
 
-function DeckEditor() {
+// function DeckEditor() {
 
-  function reducer(state, {type, payload}) {
-      switch(type) {
-        case DECK_EDITOR_ACTIONS.ADD:
-          return {...state, cards: [...state.cards, allCards.data.find((card) => card.id === payload.cardId)]};
-      }
-  }
+//   function reducer(state, {type, payload}) {
+//       switch(type) {
+//         case DECK_EDITOR_ACTIONS.ADD:
+//           return {...state, cards: [...state.cards, allCards.data.find((card) => card.id === payload.cardId)]};
+//       }
+//   }
 
-  const [{ cards }, dispatch] = useReducer(reducer,
-    {
-      cards: []
-    });
+//   const [{ cards }, dispatch] = useReducer(reducer,
+//     {
+//       cards: []
+//     });
 
-  return(
-    <>
-      <DeckViewer cards={cards}/>
-      <CardSearch dispatch={dispatch}/>
-    </>
+//   return(
+//     <>
+//       <DeckViewer cards={cards}/>
+//       <CardSearch dispatch={dispatch}/>
+//     </>
 
-  )
-}
+//   )
+// // }
 
-function DeckViewer({ cards }) {
-  return (
-  <div className="flex flexCenter flexWrap bgBlue overflowScroll" style={{ width: "600px", height: "100vh", margin: "auto"}}>
-    {
-      cards.map((card) => <div ><img style={{width: "50px", height: "72px"}} src={card.card_images[0].image_url_small} /></div>)
-    }
-  </div>)
-}
+// function DeckViewer({ cards }) {
+  
+ 
+  
+  
+//   return (
+    
+//   <div className="flex flexCenter flexWrap alignContentStart bgBlue overflowScroll" style={{ width: "600px", height: "100vh", margin: "auto"}}>
+//   </div>
+//   )
+// }
 
 function CardSearch({ dispatch }) {
   const [queryText, setQueryText] = useState('');
@@ -170,12 +175,13 @@ function CardSearch({ dispatch }) {
 
 function CardSearchResult({item, dispatch}) {
 
-  function handleOnClick() {
+  function handleOnClick(ev) {
+    ev.preventDefault(); 
     dispatch({type: DECK_EDITOR_ACTIONS.ADD, payload: {cardId: item.id}})
   }
   
   return (
-  <div onClick={handleOnClick} className="flex flexStart alignStart" key={item.id}>
+  <div onContextMenu={handleOnClick} className="flex flexStart alignItemsStart" key={item.id}>
     <img style={{objectFit: 'contain', width: '60px', paddingTop: '10px'}} src={item.card_images[0].image_url_small}/> 
     <div style={{padding: '10px'}}>
     <p>{item.name}</p>

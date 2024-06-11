@@ -83,7 +83,7 @@
     gap: 10px;
   }
 
-  &.flexStart {
+  &.justifyStart {
     justify-content: flex-start;
   }
 
@@ -91,9 +91,17 @@
     flex-wrap: wrap;
   }
 
-  &.alignStart {
+  &.alignItemsStart {
     align-items: flex-start;
   }
+
+  &.alignContentStart {
+    align-content: flex-start;
+  }
+
+  
+
+
 }
 
 .bgBlue {
