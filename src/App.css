@@ -71,13 +71,13 @@
     box-shadow: -5px 200px 110px -141px rgba(0,0,0,0.8);
     .CardFront {
       animation-name: spinCardFront;
-      animation-duration: 3s;
+      animation-duration: 5s;
       animation-iteration-count: infinite;
     }
 
     .CardBack {
       animation-name: spinCardBack;
-      animation-duration: 3s;
+      animation-duration: 5s;
       animation-iteration-count: infinite;
     }
   }

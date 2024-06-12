@@ -5,6 +5,7 @@ import back from './images/card_backing.jpeg';
 import { BrowserRouter, Switch, Routes, Route } from "react-router-dom";
 import Fuse from 'fuse.js';
 import { DeckEditor } from './components/DeckEditor/DeckEditor';
+import { DragSelectTest } from './components/DragSelect';
 
 import {
   DndContext, useSensor, useSensors, PointerSensor,
@@ -79,6 +80,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/deck" element={<DeckEditor />} />
+        <Route path="/dragselect" element={<DragSelectTest />} />
           <Route path="/search" element={<CardSearch />} />
           <Route path="/game" element={<Game />} />
           <Route path="*" element={<NoPage />} />

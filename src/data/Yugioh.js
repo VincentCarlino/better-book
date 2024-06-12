@@ -72,7 +72,7 @@ class Yugioh {
                 }
             }
         })
-        debugger;
+        // debugger;
 
 
     }
