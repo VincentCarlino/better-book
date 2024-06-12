@@ -68,7 +68,11 @@
   }
 
   &.Animate {
+<<<<<<< Updated upstream
     box-shadow: -5px 200px 110px -141px rgba(0,0,0,0.8);
+=======
+    margin-bottom: 10px;
+>>>>>>> Stashed changes
     .CardFront {
       animation-name: spinCardFront;
       animation-duration: 5s;

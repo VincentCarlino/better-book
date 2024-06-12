@@ -96,7 +96,7 @@ const NoPage = () => {
         <div className={"Card CardLarge Animate"} >
         <div className='CardInner'>
           <div className='CardFront'>
-            <img src={yugioh.getRandomImage()}/>
+            <img src={yugioh.getRandomAceMonsterImage()}/>
           </div>
           <div className='CardBack'>
             <img src={back}/>

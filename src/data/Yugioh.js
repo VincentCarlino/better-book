@@ -15,10 +15,33 @@ class Yugioh {
 
     constructor() {
         this.cards = cards.data;
+        this.aceMonsterIds = [46986414, 89631139, 84013237, 5405694, 74677422]
+    }
+
+    getAltArtWithIndex() {
+
     }
 
     getRandomImage() {
         return this.cards[Math.floor(Math.random()*this.cards.length)].card_images[0].image_url
+    }
+
+    getRandomMonster() {
+
+    }
+
+    getRandomSpell() {
+
+    }
+
+    getRandomTrap() {
+
+    }
+
+    getRandomAceMonsterImage() {
+        const aceId = this.aceMonsterIds[Math.floor(Math.random()*this.aceMonsterIds.length)]
+        return this.getImage(aceId)
+
     }
 
     getImageSmall(idOrCard) {
