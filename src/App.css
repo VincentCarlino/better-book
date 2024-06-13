@@ -127,7 +127,7 @@
 }
   
 body {
-  background-color: var(--background-950);
+  background-color: var(--background);
   color: var(--text-50);
 }
 
@@ -201,11 +201,10 @@ body {
   }
 
   &.Animate {
-<<<<<<< Updated upstream
     box-shadow: -5px 200px 110px -141px rgba(0,0,0,0.8);
-=======
     margin-bottom: 10px;
->>>>>>> Stashed changes
+    border: none;
+
     .CardFront {
       animation-name: spinCardFront;
       animation-duration: 5s;

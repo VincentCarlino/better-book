@@ -15,6 +15,7 @@ import allCards from './yugioh.json';
 import { yugioh } from './data/Yugioh';
 import {useDraggable, useDroppable} from '@dnd-kit/core';
 import {CSS} from '@dnd-kit/utilities';
+import Signup from './components/Signup/Signup';
 
 
 function Droppable({id, children}) {
@@ -83,6 +84,7 @@ function App() {
         <Route path="/dragselect" element={<DragSelectTest />} />
           <Route path="/search" element={<CardSearch />} />
           <Route path="/game" element={<Game />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="*" element={<NoPage />} />
       </Routes>
     </BrowserRouter>
