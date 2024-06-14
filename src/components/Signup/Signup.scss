@@ -33,17 +33,21 @@
     --background-950: #09100e;
 }
 
-input {
-    border-radius: 7px;
-    padding: 0.5rem 0.7rem; 
-    background-color: var(--background);
+.input-wrapper input {
+    background-color: #eee;
     border: none;
-    width: 100%;
-    box-sizing: border-box;
-    outline: 1px solid var(--background);
-    border: 0.5rem solid transparent;
-    box-shadow: var(--shadow);
-}
+    padding: 1rem;
+    font-size: 1rem;
+    width: 13em;
+    border-radius: 1rem;
+    color: var(--text);
+    box-shadow: 0 0.4rem #dfd9d9;
+    cursor: pointer;
+  }
+  
+  .input-wrapper input:focus {
+    outline-color: var(--accent);
+  }
 
 body {
     height: 100vh;
@@ -61,8 +65,8 @@ body {
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
+    flex-direction: column;
     gap: 2rem;
-    width: 18rem;
     padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
@@ -84,6 +88,8 @@ p {
 .title {
     font-weight: 800;
     font-style: italic;
+    margin: 10px;
+    padding: 10px;
 
 }
 
@@ -98,6 +104,7 @@ p {
     cursor: pointer;
     transition: box-shadow 0.2s cubic-bezier(0.45, 0, 0.55, 1) 0s;
     box-shadow: var(--shadow);
+    margin-bottom: 20px;
 
     &:active {
         box-shadow: none;

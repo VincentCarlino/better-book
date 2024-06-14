@@ -6,6 +6,7 @@ import { BrowserRouter, Switch, Routes, Route } from "react-router-dom";
 import Fuse from 'fuse.js';
 import { DeckEditor } from './components/DeckEditor/DeckEditor';
 import { DragSelectTest } from './components/DragSelect';
+import Header from './components/Header/Header';
 
 import {
   DndContext, useSensor, useSensors, PointerSensor,
@@ -80,14 +81,14 @@ function App() {
   return (
     <div className="App">
     <BrowserRouter>
+      <Header />
       <Routes>
         <Route path="/deck" element={<DeckEditor />} />
         <Route path="/dragselect" element={<DragSelectTest />} />
           <Route path="/search" element={<CardSearch />} />
           <Route path="/game" element={<Game />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/menu" element={<Menu />} />
-
+          <Route path="/home" element={<Menu />} />
           <Route path="*" element={<NoPage />} />
       </Routes>
     </BrowserRouter>

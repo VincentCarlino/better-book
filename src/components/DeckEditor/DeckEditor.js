@@ -91,19 +91,20 @@ function DeckViewer({ cards, dispatch }) {
     );
 
     return (
+        <div class="DeckViewerContainer">
         <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
             <SortableContext
-                items={cards.map((card) => card.sortableId)}
-            >
+                items={cards.map((card) => card.sortableId)}>
                 <div className="flex flexCenter flexWrap alignContentStart bgBlue overflowScroll justifyStart" style={{ width: "600px", height: "100vh", margin: "auto" }}>
                     {cards.map((card) => <SortableCard key={card.sortableId} id={card.sortableId} card={card} dispatch={dispatch}/>)}
                 </div>
             </SortableContext>
         </DndContext>
+        </div>
     );
 
     function handleDragEnd(event) {

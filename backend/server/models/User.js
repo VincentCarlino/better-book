@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  decks: [{ title: String, thumbnail: Number, mainDeck: [Number], extraDeck: [Number], sideDeck: [Number] }]
 });
 
 const User = mongoose.model('user', UserSchema);
