@@ -11,9 +11,9 @@ export default function Signup() {
 
     function handleSignup(e) {
         e.preventDefault()
-        axios.post("http://localhost:3002/signup", { username, email, password })
+        axios.post("http://localhost:5050/api/users", { username, email, password })
         .then(result => {console.log(result)
-        navigate("/deck")
+        navigate("/deck");
         })
         .catch(err => console.log(err))
     }

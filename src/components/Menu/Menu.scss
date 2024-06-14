@@ -1,0 +1,54 @@
+.Menu {
+    display: grid;
+    min-width: 800px;
+    min-height: 600px;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+}
+
+.MenuItem {
+    margin: 10px;
+    transition: box-shadow 0.2s;
+    border-radius: 10px;
+    box-shadow: 3px -2px 2px rgba(180, 180, 180, 0.7), inset 1px -1px 1px rgb(255, 255, 255);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+
+    &:active {
+        box-shadow: none;
+    }
+}
+    
+.div1 { 
+    grid-area: 1 / 1 / 4 / 4; 
+    background-color: var(--accent);
+    color: var(--background);
+}
+.div2 { 
+    grid-area: 4 / 1 / 6 / 3; 
+    background-color: var(--secondary);
+}
+.div3 { 
+    grid-area: 4 / 3 / 6 / 6; 
+    color: var(--background);
+    background-color: var(--accent);
+}
+.div4 { 
+    grid-area: 2 / 4 / 4 / 6; 
+    background-color: var(--primary);
+    color: var(--background);
+}
+.div5 { 
+    grid-area: 1 / 4 / 2 / 6;
+    background-color: var(--background);
+}
+
+h1 {
+    font-style: italic;
+}

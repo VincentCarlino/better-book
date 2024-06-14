@@ -66,6 +66,24 @@ class Yugioh {
     }
 
     /**
+     * Evaluates a ydke string and returns a jsonified list
+     * @param {str} ydke 
+     */
+    importYDKE(ydke) {
+        // Just Spright Blue: ydke://DeWJBA==!!!
+        // Just Spright Red: ydke://zXuGBA==!!!
+        // Two Blue: ydke://DeWJBA3liQQ=!!!
+        // Three Blue: ydke://DeWJBA3liQQN5YkE!!!
+        // Three Blue + One Red: ydke://DeWJBA3liQQN5YkEzXuGBA==!!!
+        // Two Blue + One Red: ydke://DeWJBA3liQTNe4YE!!!
+
+        // Original Dark Magician: ydke://rvTMAg==!!!
+        // Arcana DM: ydke://nIU0Ag==!!!
+        // Arcana + Original: ydke://nIU0Aq70zAI=!!!
+        // Original + Arcana: ydke://rvTMApyFNAI=!!!
+    }
+
+    /**
      * Imports the contents of a ydk file and converts it to json
      * TODO: give every card in a deck a uuid
      * @param {*} ydk a string containing names of cards and their respective counts

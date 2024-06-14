@@ -12,6 +12,7 @@
     --primary: #297059;
     --secondary: #7ae1c0;
     --accent: #13be88;
+    --background-600: #4a8273;
     --shadow: -0.5rem -0.5rem 1rem hsl(0 0% 100% / 0.75),
     0.5rem 0.5rem 1rem hsl(0 0% 50% / 0.16);
     --shadow-active: -0.5rem -0.5rem 1rem hsl(0 0% 100% / 0.75),
@@ -74,7 +75,6 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     font-family: Poppins;
-    color: var(--text);
 }
 
 p {
