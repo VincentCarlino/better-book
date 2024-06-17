@@ -12,10 +12,16 @@ import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
+    rectSwappingStrategy,
+    arraySwap
 } from '@dnd-kit/sortable';
+import Select from 'react-select';
+import axios from 'axios';
 import Fuse from 'fuse.js';
+import memento from '../../data/memento.ydk';
 
 import '../../App.css';
+import '../DeckEditor/DeckEditor.scss'
 import { yugioh } from '../../data/Yugioh';
 
 import { CSS } from '@dnd-kit/utilities';
@@ -26,34 +32,46 @@ export const DECK_EDITOR_ACTIONS = {
     ADD: 'ADD',
     MOVE: 'MOVE',
     REMOVE: 'REMOVE',
+    UPDATE: 'UPDATE',
     IMPORT: 'IMPORT',
     SELECT: 'SELECT',
     SAVE_AS: 'SAVE_AS',
+    SAVE: 'SAVE',
+    CLEAR: 'CLEAR',
     TOGGLE_MAGNIFY: 'TOGGLE_MAGNIFY',
 }
 
 export function DeckEditor() {
     function reducer(state, { type, payload }) {
         switch (type) {
+            case DECK_EDITOR_ACTIONS.UPDATE:
+                return {...state, ...payload};
+            case DECK_EDITOR_ACTIONS.CLEAR:
+                return {...state, deck: {mainDeck: [], extraDeck: []}}
             case DECK_EDITOR_ACTIONS.ADD:
-                return { ...state, idCounter: state.idCounter + 1, cards: [...state.cards, {...allCards.data.find((card) => card.id === payload.cardId), sortableId: `id-${state.idCounter}`}] };
+                return { ...state, deck: {...state.deck, mainDeck: [...state.deck.mainDeck, {...payload.card, sortableId: `id-${state.idCounter}`}]}, idCounter: state.idCounter + 1};
             case DECK_EDITOR_ACTIONS.MOVE:
-                const newCards = arrayMove([...state.cards], payload.oldIndex, payload.newIndex);
-                return { ...state, cards: newCards }
+                const newMainDeck = arraySwap([...state.deck.mainDeck], payload.oldIndex, payload.newIndex);
+                return { ...state, deck: {...state.deck, mainDeck: newMainDeck} }
             case DECK_EDITOR_ACTIONS.REMOVE:
-                return {...state, cards: state.cards.filter((card) => card.sortableId !== payload.sortableId)}
+                return {...state, deck: {...state.deck, mainDeck: state.deck.mainDeck.filter((card) => card.sortableId !== payload.sortableId)}}
             case DECK_EDITOR_ACTIONS.SELECT:
                 return {...state, selectedId: payload.cardId}
             case DECK_EDITOR_ACTIONS.SAVE_AS:
+                axios.post("http://localhost:5050/api/deck/create", { deck: state.deck, deckName: payload.deckName })
+                .then(result => {console.log(result)
+                })
+                .catch(err => console.log(err))
                 return {...state}
         }
     }
 
-    const [{ cards, selectedId }, dispatch] = useReducer(reducer,
+    const [{ deck, selectedId }, dispatch] = useReducer(reducer,
         {
-          cards: [],
-          selectedId: '',
-          idCounter: 0,
+            deckName: '',
+            deck: {mainDeck: [], extraDeck: []},
+            selectedId: '',
+            idCounter: 0,
         });
 
     useEffect(() => {
@@ -61,24 +79,93 @@ export function DeckEditor() {
     }, [])
 
     function handleOnKeyDown(ev) {
-        switch(ev.code) {
-            case 'KeyM':
-              dispatch({type: DECK_EDITOR_ACTIONS.TOGGLE_MAGNIFY, payload: {}});
-              break;
-        }
+        
     }
+
+    useEffect(() => {
+        fetch(memento)
+        .then((res) => res.text())
+        .then((text) => {
+            const inDeck = yugioh.importYDKtoJSON(text);
+            inDeck.mainDeck.map((card) => dispatch({type: DECK_EDITOR_ACTIONS.ADD, payload: {card: card}}))
+        })
+        .catch((e) => console.error(e));
+    }, [])
     
     return (
-        <div>
-            <DeckViewer cards={cards} dispatch={dispatch}/>
+        <div className="DeckEditorContainer">
+            <div className="Center">
+                <DeckName deck={deck} dispatch={dispatch}/>
+                <DeckViewer deck={deck} dispatch={dispatch}/>
+            </div>
+            <DeckControls dispatch={dispatch} />
             <CardSearch dispatch={dispatch}/> 
             <CardDetails cardId={selectedId}/>
         </div>
     );
 }
 
+const DeckControls = ({dispatch}) => {
+    const [selectedDeck, setSelectedDeck] = useState('')
+    
+    function handleSaveAs(e) {
+        e.preventDefault();
+        dispatch({type: DECK_EDITOR_ACTIONS.SAVE_AS , payload: {}})
+    }
 
-function DeckViewer({ cards, dispatch }) {
+    function handleClear(e) {
+        e.preventDefault();
+        dispatch({type: DECK_EDITOR_ACTIONS.CLEAR , payload: {}})
+
+    }
+
+    function confirmSaveAs(e) {
+
+    }
+
+    const selectDeckOptions = []
+
+    return (
+        <div className='Buttons'>
+            <div className='input-wrapper'>
+                <Select
+                unstyled
+                className='select'
+                value={selectedDeck}
+                onChange={setSelectedDeck}
+                options={selectDeckOptions}
+                classNamePrefix="deck-select"
+                placeholder="Select Deck"
+            />
+            </div>
+            <div className="button" onClick={handleSaveAs}>SAVE AS</div>
+            <div className="button" onClick={handleClear}>CLEAR</div>
+        </div>
+    );
+}
+
+
+function DeckName({ deckName, dispatch }) {
+
+    function handleUpdateDeckName(e) {
+        dispatch({ type: DECK_EDITOR_ACTIONS.UPDATE, payload: { deckName: e.target.value }})
+    }
+
+    
+    return(
+        <div className="input-wrapper DeckName">
+            <input value={deckName}
+                type="text"
+                onChange={(e) => handleUpdateDeckName(e)}
+                placeholder={`Deck Name`}
+                name="name" id="name" autocomplete="off"
+                autoFocus/></div>
+
+    );
+}
+
+
+function DeckViewer({ deck, dispatch }) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -91,33 +178,25 @@ function DeckViewer({ cards, dispatch }) {
     );
 
     return (
-        <div class="DeckViewerContainer">
         <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
             <SortableContext
-                items={cards.map((card) => card.sortableId)}>
-                <div className="flex flexCenter flexWrap alignContentStart bgBlue overflowScroll justifyStart" style={{ width: "600px", height: "100vh", margin: "auto" }}>
-                    {cards.map((card) => <SortableCard key={card.sortableId} id={card.sortableId} card={card} dispatch={dispatch}/>)}
+                items={deck.mainDeck.map((card) => card.sortableId)} strategy={rectSwappingStrategy}>
+                <div className="flex flexCenter flexWrap alignContentStart justifyStart">
+                    {deck.mainDeck.map((card) => <SortableCard key={card.sortableId} id={card.sortableId} card={card} dispatch={dispatch}/>)}
                 </div>
             </SortableContext>
         </DndContext>
-        </div>
     );
 
     function handleDragEnd(event) {
         const { active, over } = event;
 
         if (active.id !== over.id) {
-            dispatch({type: DECK_EDITOR_ACTIONS.MOVE, payload: {oldIndex: cards.indexOf(cards.find((card) => card.sortableId === active.id)), newIndex: cards.indexOf(cards.find((card) => card.sortableId === over.id))}})
-            // setItems((items) => {
-            //     const oldIndex = items.indexOf(items.find((card) => card.sortableId === active.id));
-            //     const newIndex = items.indexOf(items.find((card) => card.sortableId === over.id));
-
-            //     return arrayMove(items, oldIndex, newIndex);
-            // });
+            dispatch({type: DECK_EDITOR_ACTIONS.MOVE, payload: {oldIndex: deck.mainDeck.indexOf(deck.mainDeck.find((card) => card.sortableId === active.id)), newIndex: deck.mainDeck.indexOf(deck.mainDeck.find((card) => card.sortableId === over.id))}})
         }
     }
 
@@ -130,17 +209,17 @@ function SortableCard({ id, card, dispatch }) {
         listeners,
         setNodeRef,
         transform,
-        transition,
     } = useSortable({ id: id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition,
+
     };
 
-    function handleOnRightClick(event, sortableId) {
+    function handleOnRightClick(event) {
+        debugger;
         event.preventDefault();
-        dispatch({type: DECK_EDITOR_ACTIONS.REMOVE, payload: {sortableId: sortableId}})
+        dispatch({type: DECK_EDITOR_ACTIONS.REMOVE, payload: {sortableId: card.sortableId}})
     }
 
     function handleOnClick() {
@@ -148,7 +227,7 @@ function SortableCard({ id, card, dispatch }) {
     }
 
     return (
-        <div onClick={handleOnClick} onContextMenu={(event) => handleOnRightClick(event, card.sortableId)} ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div onClick={handleOnClick} onContextMenu={handleOnRightClick} ref={setNodeRef} style={style} {...attributes} {...listeners}>
             <img style={{ width: "75px", height: "108px" }} src={yugioh.getImageSmall(card.id)} />
         </div>
     );
@@ -168,13 +247,13 @@ function CardSearch({ dispatch }) {
     }
 
     return (
-        <div className="bgBlue search">
-            <div style={{position: "sticky", top: "5px"}}>
+        <div className="Search">
+            <div style={{position: "sticky", top: "5px"}} className='input-wrapper'>
                 <input
                     value={queryText}
                     type="search"
                     onChange={handleSearch}
-                    placeholder={`Start typing to search…`}
+                    placeholder={`Spright...`}
                     autoFocus
                 />
             </div>
@@ -193,7 +272,7 @@ function CardSearchResult({ item, dispatch }) {
 
     function handleOnRightClick(ev) {
         ev.preventDefault();
-        dispatch({ type: DECK_EDITOR_ACTIONS.ADD, payload: { cardId: item.id } })
+        dispatch({ type: DECK_EDITOR_ACTIONS.ADD, payload: { card: item } })
     }
 
     return (
@@ -207,14 +286,9 @@ function CardSearchResult({ item, dispatch }) {
     )
 }
 
-function CardDetails({ cardId, magnify }) {
-    
-    function handleOnMouseEnter() {
-        // TODO: Add magnification to view card text closer
-    }
-
+function CardDetails({ cardId }) {
     return (
-    <div className='CardDetails'>{ cardId ? <img style={{objectFit: 'contain', width: '400px'}} src={yugioh.getImage(cardId)}/> : <div></div>}
+    <div className='Preview'>{ cardId ? <img style={{objectFit: 'contain', width: '100%'}} src={yugioh.getImage(cardId)}/> : <div></div>}
     </div>)
 
 

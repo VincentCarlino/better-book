@@ -2,14 +2,14 @@ import './Header.scss';
 import logo from '../../images/book-heart-solid-72.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook } from '@fortawesome/free-solid-svg-icons/faBook';
-import { faCookie } from '@fortawesome/free-solid-svg-icons';
 import { faUser } from '@fortawesome/free-solid-svg-icons';
 import { Link, useLocation } from 'react-router-dom';
+import Routes from '../../Routes';
 
 export default function Header() {
     const { pathname } = useLocation();
 
-    return ((pathname !== "/login" && pathname !== "/signup") ? <>
+    return ((Routes.find((route) => route === pathname)) ? <>
         <div className="HeaderContainer">
         <Link className="HeaderHome" to='/home'>
             <FontAwesomeIcon className="HeaderLink" icon={faBook} style={{fontSize: '40px'}}/>

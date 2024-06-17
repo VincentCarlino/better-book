@@ -1,0 +1,17 @@
+.Login {
+    .input-wrapper input {
+        background-color: #eee;
+        border: none;
+        padding: 1rem;
+        font-size: 1rem;
+        width: 13em;
+        border-radius: 1rem;
+        color: var(--text);
+        box-shadow: 0 0.4rem #dfd9d9;
+        cursor: pointer;
+      }
+      
+      .input-wrapper input:focus {
+        outline-color: var(--accent);
+      }
+}

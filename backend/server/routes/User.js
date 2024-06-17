@@ -10,16 +10,21 @@ const router = express.Router();
 // @access  Public
 router.get('/test', (req, res) => res.send('user route testing!'));
 
-// @route   GET api/books
-// @desc    Get all books
-// @access  Public
-router.get('/', (req, res) => {
-  User.find()
-    .then(user => res.json(user))
-    .catch(err => res.status(404).json({ nousersfound: 'No Users found' }));
+router.post('/login', (req, res) => {
+  User.findOne({ username: req.body.username, password: req.body.password }).select('username')
+    .then((user) => {
+        if (user === null) {
+          return res.status(404).json({ nousersfound: 'No Users found' });
+        }
+        else {
+          return res.json(user);
+
+        }
+      })
+      .catch(err => res.status(404).json({ nousersfound: `Error encountered: ${err}` }));
 });
 
-router.post('/', (req, res) => {
+router.post('/signup', (req, res) => {
     User.create(req.body)
       .then(user => res.json({ msg: 'User added successfully' }))
       .catch(err => res.status(400).json({ error: 'Unable to add this user', detail: err }));

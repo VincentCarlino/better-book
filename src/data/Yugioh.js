@@ -45,7 +45,6 @@ class Yugioh {
     }
 
     getImageSmall(idOrCard) {
-        debugger;
         try {
             if (idOrCard instanceof Object) {
                 return idOrCard.card_images[0].image_url_small;
@@ -61,8 +60,12 @@ class Yugioh {
         return this.cards.find((c) => c.id === id).card_images[0].image_url;
     }
 
-    getCard(id) {
+    getCardByID(id) {
         return this.cards.find((c) => c.id === id);
+    }
+
+    getCardByName(name) {
+        return this.cards.find((c) => c.name === name);
     }
 
     /**
@@ -88,7 +91,7 @@ class Yugioh {
      * TODO: give every card in a deck a uuid
      * @param {*} ydk a string containing names of cards and their respective counts
      */
-    importYDK(ydk) {
+    importYDKtoJSON(ydk) {
         const lines = ydk.split('\n');
 
         const decks = {
@@ -99,7 +102,7 @@ class Yugioh {
         let activeDeck = 'mainDeck';
         lines.forEach((line) => {
             if(line === "Main Deck:") {
-                console.log(line)
+
             }
             else if (line === "Extra Deck:") {
                 activeDeck = 'extraDeck';
@@ -109,12 +112,12 @@ class Yugioh {
                 let cardName = line.slice(0, -3);
 
                 for (let i = 0; i < numCard; i++) {
-                    decks[activeDeck].push(cardName);
+                    decks[activeDeck].push(this.getCardByName(cardName));
                 }
             }
         })
-        // debugger;
 
+        return decks
 
     }
 }

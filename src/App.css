@@ -131,7 +131,7 @@ body {
 }
 
 .Container {
-  border: solid var(--accent-400);
+  border: solid var(--accent);
   height: 625px;
   width: 800px;
   margin: auto;
@@ -239,7 +239,7 @@ body {
 .Hand {
   height: 140px;
   width: 80%;
-  border: solid var(--text-50);
+  border: solid var(--accent);
   margin: auto;
 }
 
