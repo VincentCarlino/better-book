@@ -47,8 +47,6 @@
     color: var(--text);
     box-shadow: 0 0.4rem #dfd9d9;
     cursor: pointer;
-    outline-color: var(--accent);
-    outline-style: solid;
     
   }
   
@@ -60,11 +58,15 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: start;
-    gap: 2rem;
-    background-color: var(--background);
+    // align-items: center;
+    // justify-content: start;
+    // gap: 2rem;
+    // background-color: var(--background);
   }
+
+#root {
+    margin: auto;
+}
 
 .container {
     background-color: var(--background-100);

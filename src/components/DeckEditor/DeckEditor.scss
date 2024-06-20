@@ -25,61 +25,80 @@
                 width: 75%;
                 box-sizing: border-box; };
         }
+
+        .extraDeck {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(10px, max-content));
+            max-width: 90%;
+            overflow: scroll;
+            margin-top: 20px;
+            padding-right: 100px;
+        }
     }
 
     .DeckName {
 
     }
 
-    .Preview { 
+
+    .Left {
         grid-area: 1 / 1 / 5 / 3; 
-        min-height: 535px;
-    }
-
-    .Buttons { 
-        grid-area: 5 / 1 / 7 / 3; 
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 10px;
-
-        .input-wrapper {
-            .select, input {
-                background-color: #eee;
-                border: none;
-                padding: .5rem 1rem;
-                font-size: 1rem;
-                width: 13em;
-                border-radius: 1rem;
-                color: var(--text);
-                box-shadow: 0 0.4rem #dfd9d9;
-                width: 100%;
-                box-sizing: border-box;
-                cursor: pointer;
-              }
-
-            input {
-                padding: 1.2rem;
-            }
-        }
-          
-        .input-wrapper .select:focus {
-            outline-color: var(--accent);
-        }
-
-        .deck-select__menu {
-            background-color: #eee;
-            box-shadow: 0 0.4rem #dfd9d9;
-            border-radius: 1rem;
-            color: var(--text);
-        }
-
-        .deck-select__option {
-            margin: 10px 0;
-            padding: 10px;
+        
+        .Preview { 
+            min-height: 535px;
         }
     
+        .Buttons { 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+    
+            .input-wrapper {
+                margin-bottom: 0.6rem;
+                
+                .select, input {
+                    background-color: #eee;
+                    border: none;
+                    padding: .5rem 1rem;
+                    font-size: 1rem;
+                    width: 13em;
+                    border-radius: 1rem;
+                    color: var(--text);
+                    box-shadow: 0 0.4rem #dfd9d9;
+                    width: 100%;
+                    box-sizing: border-box;
+                    cursor: pointer;
+                  }
+    
+                input {
+                    padding: 1.2rem;
+                }
+            }
+              
+            .input-wrapper .select:focus {
+                outline-color: var(--accent);
+            }
+
+            .button {
+                margin-bottom: 0;
+            }
+    
+            .deck-select__menu {
+                background-color: #eee;
+                box-shadow: 0 0.4rem #dfd9d9;
+                border-radius: 1rem;
+                color: var(--text);
+            }
+    
+            .deck-select__option {
+                margin: 10px 0;
+                padding: 10px;
+            }
+        
+        }
     }
+    
 
     
 

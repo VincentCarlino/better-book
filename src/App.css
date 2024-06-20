@@ -132,8 +132,8 @@ body {
 
 .Container {
   border: solid var(--accent);
-  height: 625px;
-  width: 800px;
+  height: 545px;
+  width: 600px;
   margin: auto;
   margin-top: 40px;
   margin-bottom: 40px;

@@ -4,7 +4,8 @@ import memento from './memento.ydk';
 fetch(memento)
   .then((res) => res.text())
   .then((text) => {
-    new Yugioh().importYDK(text);
+    const ygo = new Yugioh();
+    return ygo.importYDKE(text);
    })
   .catch((e) => console.error(e));
 /**

@@ -23,6 +23,7 @@ import Signup from './components/Signup/Signup';
 import Login from './components/Login/Login';
 import Menu from './components/Menu/Menu';
 import { Droppable } from './components/Generic/Droppable';
+import { RoomSearch } from './components/RoomSearch/RoomSearch';
 
 // BEGIN: Enums
 
@@ -38,19 +39,20 @@ function App() {
   return (
     <div className="App">
     <AuthProvider>
-    <BrowserRouter>
-      <Header />
-      <Routes>
-        <Route path="/deck" element={<DeckEditor />} />
-        <Route path="/dragselect" element={<DragSelectTest />} />
-          <Route path="/search" element={<CardSearch />} />
-          <Route path="/game" element={<Game />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/home" element={<Menu />} />
-          <Route path="*" element={<NoPage />} />
-      </Routes>
-    </BrowserRouter>
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          <Route path="/deck" element={<DeckEditor />} />
+          <Route path="/dragselect" element={<DragSelectTest />} />
+            <Route path="/search" element={<CardSearch />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<Menu />} />
+            <Route path="/rooms" element={<RoomSearch />} />
+            <Route path="*" element={<NoPage />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
     </div>
   );
