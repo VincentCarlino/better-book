@@ -16,7 +16,8 @@ const GAME_ACTIONS = {
   ROTATE_SELECTED: 'ROTATE_SELECTED',
   ORGANIZE_SELECTED: 'ORGANIZE_SELECTED',
   SET_COORDS: 'SET_COORDS',
-  VIEW_SELECTED: 'VIEW_SELECTED'
+  VIEW_SELECTED: 'VIEW_SELECTED',
+  SHUFFLE_DECK: 'SHUFFLE_DECK'
 }
 
 const cardHeight = 90;
@@ -25,7 +26,7 @@ const cardWidth = 62;
 // BEGIN: DragSelect react integration
 const Context = createContext(undefined);
 
-function DragSelectProvider({ children, settings = {} }) {
+function DragSelectProvider({ children, settings = {dropInsideThreshold: 0.1} }) {
   const [ds, setDS] = useState();
 
   useEffect(() => {
@@ -134,15 +135,14 @@ export function DragSelectTest({ playerA, playerB }) {
       case GAME_ACTIONS.VIEW_SELECTED:
         if (!state.selectedItemIds) return {...state}
         var newCards = [...state.cards];
-
         state.selectedItemIds.forEach((itemId, index) => {
           var w = newCards.find((c) => c.itemId === itemId)
-          w.x = firstSelected.coords.x + ((cardWidth + 10) * (index % 5));
+          w.x = firstSelected.coords.x + ((cardWidth + 10) * (index % 5)) - (2 * cardWidth);
           w.y = firstSelected.coords.y + ((cardHeight + 10) * Math.floor(index / 5));
         });
-
         return {...state, cards: newCards};
-        
+      case GAME_ACTIONS.SHUFFLE_DECK:
+        return {...state, collections: {...state.collections, mainDeck: [...shuffle(state.collections.mainDeck)]}}
 
     }
 
@@ -178,19 +178,20 @@ export function DragSelectTest({ playerA, playerB }) {
   function handleOnKeyDown(ev) {
     switch(ev.code) {
       case 'KeyR':
-        debugger;
         dispatch({type: GAME_ACTIONS.ROTATE_SELECTED, payload: {}});
         break;
       case 'KeyF':
-        debugger;
         dispatch({type: GAME_ACTIONS.FLIP_SELECTED, payload: {}});
         break;
-      case 'KeyS':
-          dispatch({type: GAME_ACTIONS.ORGANIZE_SELECTED, payload: {}});
-          break;
+      case 'KeyC':
+        dispatch({type: GAME_ACTIONS.ORGANIZE_SELECTED, payload: {}});
+        break;
       case 'KeyV':
-          dispatch({type: GAME_ACTIONS.VIEW_SELECTED, payload: {}});
-          break;
+        dispatch({type: GAME_ACTIONS.VIEW_SELECTED, payload: {}});
+        break;
+      case 'KeyS':
+        dispatch({type: GAME_ACTIONS.SHUFFLE_DECK, payload: {}})
+        break
     }
   }
 
@@ -208,6 +209,7 @@ export function DragSelectTest({ playerA, playerB }) {
     return(
       <>
           <DragSelectProvider settings={{}}>
+            <Hand handId={'handA'} />
             <div id='field' className="Container">
               <Field />
                 {collections.field.map((itemId) => {return(
@@ -219,6 +221,7 @@ export function DragSelectTest({ playerA, playerB }) {
                 <Deck x={525} y={443} itemId="mainDeck" cardItemIds={collections.mainDeck} dispatch={dispatch}/>
 
             </div>
+            <Hand handId={'handB'} />
           </DragSelectProvider>
       </>
     )
@@ -229,6 +232,33 @@ function Field() {
     <div className="Field">
       {[...Array(14).keys()].map((item) => <div className={`zone zone${item + 1}`}></div>)}
     </div>
+  )
+}
+
+/**
+ * A component capable of accepting selectable components
+ */
+function Droppable({ droppableId, droppableClass = 'droppable', handleDragEnd = (() => {}), handleSelect = (() => {}), handleUnselect = (() => {}), children }) {
+  const ds = useDragSelect();
+  const inputEl = useRef();
+
+  useEffect(() => {
+    const element = inputEl.current;
+    if (!element || !ds) return;
+    ds.setSettings({dropZones: [...ds.DropZones._zones, {id: droppableId, element: element}]})
+  }, [ds, inputEl])
+
+  useEffect(() => {
+    if (!ds) return;
+    const id = ds.subscribe("DS:end", (e) => {
+      debugger;
+      handleDragEnd(e);
+      }); 
+    return () => ds.unsubscribe("DS:end", null, id);
+  }, [ds]);
+
+  return (
+    <div ref={inputEl} className={droppableClass}>{ children }</div>
   )
 }
 
@@ -307,8 +337,21 @@ function Deck({itemId, cardItemIds, x, y, dispatch}) {
     }
   }
 
-  return (cardItemIds ? 
-          <div style={{transform: `translate(${x}px, ${y}px)`}}>
+  function handleDeckDrop(e) {
+    debugger;
+    if(e.dropTarget && e.dropTarget.id === itemId) {
+      console.log('Item dropped into', itemId);
+      console.log(e);
+    }
+  }
+
+
+
+  return (
+    <div style={{transform: `translate(${x}px, ${y}px)`}}>
+    <Droppable droppableId={itemId} handleDragEnd={handleDeckDrop}> 
+      {cardItemIds ? 
+          <>
             <div className="Card" style={{position: 'absolute'}}>
               <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
                 <img src={back} draggable="false"/>
@@ -330,8 +373,10 @@ function Deck({itemId, cardItemIds, x, y, dispatch}) {
                 </div>
               </div>
             </Selectable>
-          </div> : ''
-        )
+          </> : ''
+        }
+    </Droppable>
+    </div>)
 
 }
 
@@ -374,4 +419,22 @@ function Card({x = 0, y = 0, id, itemId, horizontal = false, flipped = false, di
     </Selectable>
   )
 
+}
+
+function Hand({ handId }) {
+
+  function handleDragEnd(e) {
+    if(e.dropTarget && e.dropTarget.id === handId) {
+      console.log('Item dropped into', handId);
+      console.log(e);
+    }
+  }
+
+  return (
+    <Droppable droppableId={handId} handleDragEnd={handleDragEnd}> 
+    <div style={{height: '200px', backgroundColor: 'gray'}}>
+      HAND
+    </div>
+    </Droppable>
+  )
 }
