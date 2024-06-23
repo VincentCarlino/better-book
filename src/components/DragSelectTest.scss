@@ -90,7 +90,62 @@
 
 .beans {
   width: fit-content;
+  // position: absolute;
+}
+
+.deckControls {
+  width: fit-content;
+  display:flex;
   position: absolute;
+  gap: 10px;
+
+  .viewDeck {
+    border: solid black;
+    text-align: center;
+    padding: 10px;
+    height: fit-content;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+  .droppable {
+    user-select: none;
+    border: solid black;
+    height: 90px;
+    width: 62px;
+    font-size: 10px;
+
+    &:hover, &.ds-dropzone-ready {
+      background-color: rgb(173, 181, 213);
+    }
+  } 
+}
+
+.deckViewer {
+  background: rgba( 234, 228, 228, 0.25 );
+  box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+  backdrop-filter: blur( 7.5px );
+  -webkit-backdrop-filter: blur( 7.5px );
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 615px;
+  position: fixed;
+  bottom: 20px;
+  z-index: 20000;
+  padding: 20px;
+  overflow-x: visible; 
+}
+
+.deckControlsRight {
+  transform: translate(95px);
+}
+
+.deckControlsLeft {
+  transform: translate(-220px);
+  flex-direction: row-reverse;
 }
 
 .Field {

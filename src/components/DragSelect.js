@@ -4,6 +4,10 @@ import { yugioh } from "../data/Yugioh";
 import back from '../images/card_backing.jpeg';
 import './DragSelectTest.scss';
 import { useReducer } from "react";
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useDrag, DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
 const GAME_ACTIONS = {
   RESET: 'RESET',
@@ -17,7 +21,10 @@ const GAME_ACTIONS = {
   ORGANIZE_SELECTED: 'ORGANIZE_SELECTED',
   SET_COORDS: 'SET_COORDS',
   VIEW_SELECTED: 'VIEW_SELECTED',
-  SHUFFLE_DECK: 'SHUFFLE_DECK'
+  SHUFFLE_DECK: 'SHUFFLE_DECK',
+  TOP_DECK: 'TOP_DECK', 
+  BOTTOM_DECK: 'BOTTOM_DECK',
+  SEARCH_CARD: 'SEARCH_CARD'
 }
 
 const cardHeight = 90;
@@ -67,17 +74,17 @@ const deckData = {
   66518509, 80722024, 80722024, 80722024,
   43338320, 10045474, 10045474, 10045474,
   79600447
+],
+extraDeck: [
+  11321089, 19181420,
+  19181420,  1769875,
+  11765832, 54757758,
+  22850702, 34001672,
+  71166481, 98127546,
+  86066372, 38342335,
+  29301450, 47759571,
+  65741786
 ]}
-// extraDeck: [
-//   11321089, 19181420,
-//   19181420,  1769875,
-//   11765832, 54757758,
-//   22850702, 34001672,
-//   71166481, 98127546,
-//   86066372, 38342335,
-//   29301450, 47759571,
-//   65741786
-// ]}
 
 function shuffle(c) {
   var array = [...c]
@@ -92,7 +99,9 @@ function shuffle(c) {
 
 export function DragSelectTest({ playerA, playerB }) {
 
+  // Given an item, reset its parameters to their defaults
   function reducer(state, { type, payload }) {
+
     const firstSelected = state.cards.find((card) => state.selectedItemIds.includes(card.itemId));
 
     switch (type) {     
@@ -100,17 +109,51 @@ export function DragSelectTest({ playerA, playerB }) {
         const newSelectedItemIds = [...new Set([...state.selectedItemIds, payload.itemId])];
         console.log(newSelectedItemIds)
         return {...state, selectedItemIds: newSelectedItemIds}
+
       case GAME_ACTIONS.SET_COORDS:
         return {...state, cards: state.cards.map((card) => (card.itemId === payload.itemId ? {...card, coords: payload.coords} : card))}
+        
       case GAME_ACTIONS.UNSELECT_CARD:
         const selectedItemIds = [...new Set([...state.selectedItemIds.filter((id) => id !== payload.itemId)])];
         console.log(selectedItemIds)
         return {...state, selectedItemIds: selectedItemIds}
+
       case GAME_ACTIONS.DRAW_CARD:
         const cardId = state.collections.mainDeck.shift();
         return {...state, 
-              cards: [...state.cards.map((card) => (card.itemId === cardId ? {...card, x: payload.x, y: payload.y, coords: {x:payload.x, y:payload.y}, flipped: true, horizontal: false} : card))], 
+              cards: [...state.cards.map((card) => (
+                card.itemId === cardId ? {
+                  ...card, x: payload.x, y: payload.y, coords: {x:payload.x, y:payload.y}, flipped: true, horizontal: false
+                } 
+                : card))], 
               collections: {mainDeck: [...state.collections.mainDeck], field: [...state.collections.field, cardId]}};
+
+      case GAME_ACTIONS.TOP_DECK:
+        return {...state,
+          cards: [...state.cards.map((card) => (
+            card.itemId === payload.cardId ? {
+              ...card, x: 0, y: 0, flipped: false, horizontal: false
+            } 
+            : card))],
+          collections: {mainDeck: [payload.cardId, ...state.collections.mainDeck], field: [...state.collections.field.filter((id) => id !== payload.cardId)]}
+        }
+
+      case GAME_ACTIONS.BOTTOM_DECK:
+        return {...state,
+          cards: [...state.cards.map((card) => (
+            card.itemId === payload.cardId ? {
+              ...card, x: 0, y: 0, flipped: false, horizontal: false
+            } 
+            : card))],
+          collections: {mainDeck: [...state.collections.mainDeck, payload.cardId], field: [...state.collections.field.filter((id) => id !== payload.cardId)]}
+        }
+
+      case GAME_ACTIONS.SEARCH_CARD:
+        const o = originRef.current.getBoundingClientRect();
+        return  {...state, 
+          cards: [...state.cards.map((card) => (card.itemId === payload.itemId ? {...card, x: payload.x - o.x, y:payload.y - o.y, flipped: false, horizontal: false} : card))], 
+          collections: {mainDeck: [...state.collections.mainDeck.filter((c) => c !== payload.itemId)], field: [...state.collections.field, payload.itemId]}};
+
       case GAME_ACTIONS.FLIP_SELECTED:
         return {...state, cards: 
           state.cards.map((card) => {
@@ -148,9 +191,13 @@ export function DragSelectTest({ playerA, playerB }) {
 
   }
 
+  const originRef = useRef(null);
+
   // Set up initial state
   let cardsData = []
   let mainDeckCardIds = []
+  let extraDeckCardIds = []
+
   let idCount = 0;
 
   deckData.mainDeck.map((c) => { 
@@ -160,17 +207,17 @@ export function DragSelectTest({ playerA, playerB }) {
     cardsData.push({id: card.id, horizontal: false, flipped: false, itemId: `card${idCount}`});
     mainDeckCardIds.push(cardId)
   });
-  // deckData.extraDeck.map((c) => { 
-  //   idCount++
-  //   let card = yugioh.getCardByID(c)
-  //   let cardId = `card${idCount}`;
-  //   cardsData.push({id: card.id, horizontal: false, flipped: false, itemId: });
-  // });
+  deckData.extraDeck.map((c) => { 
+    idCount++
+    let card = yugioh.getCardByID(c)
+    let cardId = `card${idCount}`;
+    cardsData.push({id: card.id, horizontal: false, flipped: false, itemId: `card${idCount}`});
+  });
 
   const [{ cards, collections, selectedItemIds }, dispatch] = useReducer(reducer,
   {
     cards: cardsData,
-    collections: {mainDeck: mainDeckCardIds, field: []},
+    collections: {mainDeck: mainDeckCardIds, extraDeck: mainDeckCardIds, field: []},
     selectedItemIds: []
 
   });
@@ -211,6 +258,7 @@ export function DragSelectTest({ playerA, playerB }) {
           <DragSelectProvider settings={{}}>
             <Hand handId={'handA'} />
             <div id='field' className="Container">
+              <div ref={originRef} style={{ height: '10px', width: '10px', backgroundColor: 'black', position: 'absolute'}}></div>
               <Field />
                 {collections.field.map((itemId) => {return(
                   <Card {...cards.find((c) => {
@@ -218,11 +266,14 @@ export function DragSelectTest({ playerA, playerB }) {
                 {/* <Deck x={525} y={3} itemId="deck0" dispatch={dispatch}/> */}
                 {/* <Deck x={3} y={443} itemId="deck1" dispatch={dispatch}/> */}
                 {/* <Deck x={3} y={3} itemId="deck2" dispatch={dispatch}/> */}
-                <Deck x={525} y={443} itemId="mainDeck" cardItemIds={collections.mainDeck} dispatch={dispatch}/>
+                <Deck x={5} y={443} itemId="extraDeck" cardItemIds={collections.mainDeck} cards={cards.filter((c) => collections.extraDeck.includes(c.itemId))} dispatch={dispatch}/>
+
+                <Deck x={525} y={443} itemId="mainDeck" cardItemIds={collections.mainDeck} cards={cards.filter((c) => collections.mainDeck.includes(c.itemId))} dispatch={dispatch}/>
 
             </div>
             <Hand handId={'handB'} />
           </DragSelectProvider>
+          <CoordinateDebugger />
       </>
     )
 }
@@ -251,7 +302,6 @@ function Droppable({ droppableId, droppableClass = 'droppable', handleDragEnd = 
   useEffect(() => {
     if (!ds) return;
     const id = ds.subscribe("DS:end", (e) => {
-      debugger;
       handleDragEnd(e);
       }); 
     return () => ds.unsubscribe("DS:end", null, id);
@@ -262,14 +312,14 @@ function Droppable({ droppableId, droppableClass = 'droppable', handleDragEnd = 
   )
 }
 
-function Selectable({x = 0, y = 0, itemId, selectableClass = 'selectable', transition = false, handleDragEnd = (() => {}), handleSelect = (() => {}), handleUnselect = (() => {}), children}) {
+function Selectable({x = 0, y = 0, coords, cx, cy, itemId, inline = false, selectableClass = 'selectable', transition = false, handleDragEnd = (() => {}), handleSelect = (() => {}), handleUnselect = (() => {}), handleDragStart = (() => {}), children}) {
   const ds = useDragSelect();
   const inputEl = useRef();
 
   useEffect(() => {
     const element = inputEl.current;
     if (!element || !ds) return;
-    element.style.transform = `translate3d(${x}px, ${y}px, 1px)`
+    element.style.transform = `translate3d(${x}px, ${y}px, 1px);`
     ds.addSelectables(element);
   }, [ds, inputEl]);
 
@@ -280,6 +330,15 @@ function Selectable({x = 0, y = 0, itemId, selectableClass = 'selectable', trans
     });
 
     return () => ds.unsubscribe("DS:end", null, id);
+  }, [ds]);
+
+  useEffect(() => {
+    if (!ds) return;
+    const id = ds.subscribe("DS:start", (e) => {
+      handleDragStart(e);
+    });
+
+    return () => ds.unsubscribe("DS:start", null, id);
   }, [ds]);
 
   useEffect(() => {
@@ -305,7 +364,7 @@ function Selectable({x = 0, y = 0, itemId, selectableClass = 'selectable', trans
     if (!element || !ds) return;
     if (transition) {
       element.style.transition = 'transform .05s';
-      element.style.transform = `translate3d(${x}px, ${y}px, 1px)`;
+      if (x && y) element.style.transform = `translate3d(${x}px, ${y}px, 1px)`;
     }
     // element.style.transition = 'none';
   },
@@ -313,7 +372,8 @@ function Selectable({x = 0, y = 0, itemId, selectableClass = 'selectable', trans
   );
 
     return (
-      <div ref={inputEl} className={selectableClass} data-item-id={itemId} aria-labelledby="" style={{width: 'fit-content', position: 'absolute'}}>
+      <div ref={inputEl} className={selectableClass} data-item-id={itemId} aria-labelledby="" style={{width: 'fit-content', position: (inline ? '': 'absolute'
+      ), transform: (inline ? '': `translate3d(${x}px, ${y}px, 1px)`)}}>
         { children }
       </div>
     )
@@ -321,66 +381,117 @@ function Selectable({x = 0, y = 0, itemId, selectableClass = 'selectable', trans
 
 
 
-function Deck({itemId, cardItemIds, x, y, dispatch}) {
+function Deck({itemId, cardItemIds, cards, x, y, dispatch}) {
+  const[deckViewerEnabled, setDeckViewerEnabled] = useState(false)
+  const viewerRef = useRef(null);
 
   function handleDeckDragEnd(e) {
     if (e.items.length >= 1) {
       if (e.items[0].dataset.itemId === itemId && e.isDragging) {
         const style = getComputedStyle(e.items[0]);
-        const matrix = new DOMMatrixReadOnly(style.transform)
+        // Get the element's transform 
+        const matrix = new DOMMatrixReadOnly(style.transform);
         const dragEndX = matrix.e;
         const dragEndY = matrix.f;
-        
+        // Reset the element's style
         e.items[0].style.transform = "translate3d(0px, 0px, 0px)";
+        // Place the next card of the deck at the same coordinates relative to the deck
         dispatch({type: GAME_ACTIONS.DRAW_CARD, payload: {itemId: itemId, x: x + dragEndX, y: y + dragEndY}})
       }
     }
   }
 
   function handleDeckDrop(e) {
-    debugger;
     if(e.dropTarget && e.dropTarget.id === itemId) {
       console.log('Item dropped into', itemId);
       console.log(e);
     }
   }
 
+  function handleTopDeck(e) {
+    if (e.dropTarget && e.dropTarget.id === `${itemId}-top`) {
+      e.items.map((item) => dispatch({type: GAME_ACTIONS.TOP_DECK, payload: {cardId: item.dataset.itemId}}))
+    }
+  }
 
+  function handleBottomDeck(e) {
+    if (e.dropTarget && e.dropTarget.id === `${itemId}-bottom`) {
+      e.items.map((item) => dispatch({type: GAME_ACTIONS.BOTTOM_DECK, payload: {cardId: item.dataset.itemId}}))
+    }
+  }
+
+  function handleViewDeck(e) {
+    setDeckViewerEnabled(!deckViewerEnabled)
+  }
+
+  function handleDragEnd(e, itemId) {
+    const vref = viewerRef.current;
+    const target = e.items.find(((item) => item.dataset.itemId === itemId));
+    if (!target) return;
+    const bcr = vref.getBoundingClientRect();
+    if(!bcr) return;
+    const targetCr = target.getBoundingClientRect();
+
+    if ((e.event.clientX < bcr.left || e.clientX > bcr.right) || (e.event.clientY < bcr.top || e.clientY > bcr.bottom)) {
+      dispatch({type: GAME_ACTIONS.SEARCH_CARD, payload: {itemId: itemId, fromId: '', x: targetCr.x, y: targetCr.y}})
+      setDeckViewerEnabled(false);
+    }
+
+   
+  }
 
   return (
     <div style={{transform: `translate(${x}px, ${y}px)`}}>
-    <Droppable droppableId={itemId} handleDragEnd={handleDeckDrop}> 
+      {deckViewerEnabled && cardItemIds ? 
+        <div className="deckViewer" ref={viewerRef}>
+          {cardItemIds.map((id) => <Card {...cards.find((c) => {
+                    return c.itemId === id})} inline={true} onDragEnd={(e) => {handleDragEnd(e, id)}} dispatch={dispatch}/>)}
+          <div onClick={handleViewDeck} style={{position: 'fixed', top: '0', right: '15px', cursor: 'pointer'}}><h1>X</h1></div>
+        </div>
+        :
+       ''}
       {cardItemIds ? 
-          <>
-            <div className="Card" style={{position: 'absolute'}}>
-              <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
-                <img src={back} draggable="false"/>
-              </div>
-              <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
-                <img src={back} draggable="false"/>
-              </div>
-              <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
-                <img src={back} draggable="false"/>
-              </div>
-              <div style={{position: 'absolute'}}>
-                <img src={back} draggable="false"/>
-              </div>
-            </div>
-            <Selectable selectableClass="deck" itemId={itemId} handleDragEnd={handleDeckDragEnd}>
-              <div className="Card">
-              <div className='CardInner'>
+          <div>
+            <div>
+              <div className="Card" style={{position: 'absolute'}}>
+                <div style={{position: 'absolute', transform: 'translate(6px, 6px)'}}>
+                  <img src={back} draggable="false"/>
+                </div>
+                <div style={{position: 'absolute', transform: 'translate(4px, 4px)'}}>
+                  <img src={back} draggable="false"/>
+                </div>
+                <div style={{position: 'absolute', transform: 'translate(2px, 2px)'}}>
+                  <img src={back} draggable="false"/>
+                </div>
+                <div style={{position: 'absolute'}}>
                   <img src={back} draggable="false"/>
                 </div>
               </div>
-            </Selectable>
-          </> : ''
+              <Selectable selectableClass="deck" itemId={itemId} handleDragEnd={handleDeckDragEnd}>
+                <div className="Card">
+                <div className='CardInner'>
+                    <img src={back} draggable="false"/>
+                  </div>
+                </div>
+              </Selectable>
+            </div>
+            <div className="deckControls deckControlsRight">
+              <Droppable droppableId={`${itemId}-top`} handleDragEnd={handleTopDeck}> top
+              </Droppable>
+              <Droppable droppableId={`${itemId}-bottom`} handleDragEnd={handleBottomDeck}> bottom
+              </Droppable>
+              <div className="viewDeck" onClick={handleViewDeck}>
+                <FontAwesomeIcon icon={faEye} style={{fontSize: '20px'}}/>
+              </div>
+            </div>
+          </div> : ''
         }
-    </Droppable>
+    
     </div>)
 
 }
-
-function Card({x = 0, y = 0, id, itemId, horizontal = false, flipped = false, dispatch}) {
+// Draggable, selectable, functional card
+function Card({x = 0, y = 0, coords, id, itemId, horizontal = false, flipped = false, inline = false, dispatch, onDragEnd}) {
   
   function handleSelect(e) {
     if (e.item.dataset.itemId == itemId) dispatch({type: GAME_ACTIONS.SELECT_CARD, payload: {itemId: itemId}})
@@ -403,7 +514,7 @@ function Card({x = 0, y = 0, id, itemId, horizontal = false, flipped = false, di
   }
 
   return (
-    <Selectable x={x} y={y} transition={true} selectableClass="beans" itemId={itemId} handleDragEnd={handleDragEnd} handleSelect={handleSelect} handleUnselect={handleUnselect}>
+    <Selectable x={x} y={y} coords={coords} inline={inline} transition={true} selectableClass="beans" itemId={itemId} handleDragEnd={onDragEnd ? onDragEnd : handleDragEnd} handleSelect={handleSelect} handleUnselect={handleUnselect}>
       <div className={`Card ${(flipped ? 'flipped' : '')} ${(horizontal ? 'horizontal' : '')}`}>
           <div className="CardRotationContainer">
             <div className='CardInner'>
@@ -420,6 +531,36 @@ function Card({x = 0, y = 0, id, itemId, horizontal = false, flipped = false, di
   )
 
 }
+
+/** Use the browser inspector to change values for the element's x and y coords */
+function CoordinateDebugger() {
+
+  return (
+    <div style={{ position: 'fixed', top: '0px', left: '0px', height: '20px', width: '20px', backgroundColor: 'black'}}></div>
+  )
+
+}
+
+// function DeckViewCard({id, itemId}) {
+
+//   return (
+//     <Selectable x={x} y={y} inline={inline} transition={true} selectableClass="beans" itemId={itemId} handleDragEnd={handleDragEnd} handleSelect={handleSelect} handleUnselect={handleUnselect}>
+//       <div className={`Card ${(flipped ? 'flipped' : '')} ${(horizontal ? 'horizontal' : '')}`}>
+//           <div className="CardRotationContainer">
+//             <div className='CardInner'>
+//               <div className='CardFront'>
+//                 <img src={yugioh.getImageSmall(id)} draggable="false"/>
+//               </div>
+//               <div className='CardBack'>
+//                 <img src={back} draggable="false"/>
+//               </div>
+//             </div>
+//         </div>
+//       </div>
+//     </Selectable>
+//   )
+
+// }
 
 function Hand({ handId }) {
 
