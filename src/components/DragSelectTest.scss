@@ -181,3 +181,18 @@
 .CardInner {
   transition: transform .2s;
 }
+
+
+.cardsInHand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90px;
+  padding-top: 15px;
+}
+
+.handContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
